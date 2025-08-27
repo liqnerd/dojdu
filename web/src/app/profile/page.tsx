@@ -11,27 +11,30 @@ type Attendance = { id: number; status: RSVPStatus; event: EventItem };
 
 async function fetchMyAttendances(jwt: string): Promise<Attendance[]> {
   const userId = JSON.parse(atob(jwt.split('.')[1])).id;
-  const response = await api<{data: any[]}>(`/api/attendances?filters[user][$eq]=${userId}&populate[event][populate][0]=venue&populate[event][populate][1]=category&populate[event][populate][2]=image`, {
+  const response = await api<{data: unknown[]}>(`/api/attendances?filters[user][$eq]=${userId}&populate[event][populate][0]=venue&populate[event][populate][1]=category&populate[event][populate][2]=image`, {
     headers: { Authorization: `Bearer ${jwt}` },
   });
   
   // Transform the response to match our expected format
-  return response.data.map((item: any) => ({
-    id: item.id,
-    status: item.status,
-    event: {
-      id: item.event.id,
-      title: item.event.title,
-      slug: item.event.slug,
-      description: item.event.description,
-      startDate: item.event.startDate,
-      endDate: item.event.endDate,
-      venue: item.event.venue,
-      category: item.event.category,
-      image: item.event.image,
-      attendanceCounts: { going: 0, maybe: 0, not_going: 0 } // We'll calculate this later if needed
-    }
-  })).filter(a => a.event); // Filter out any attendances where event is null
+  return response.data.map((item: unknown) => {
+    const typedItem = item as { id: number; status: RSVPStatus; event: EventItem };
+    return {
+      id: typedItem.id,
+      status: typedItem.status,
+      event: {
+        id: typedItem.event.id,
+        title: typedItem.event.title,
+        slug: typedItem.event.slug,
+        description: typedItem.event.description,
+        startDate: typedItem.event.startDate,
+        endDate: typedItem.event.endDate,
+        venue: typedItem.event.venue,
+        category: typedItem.event.category,
+        image: typedItem.event.image,
+        attendanceCounts: { going: 0, maybe: 0, not_going: 0 } // We'll calculate this later if needed
+      }
+    };
+  }).filter(a => a.event); // Filter out any attendances where event is null
 }
 
 export default function ProfilePage() {

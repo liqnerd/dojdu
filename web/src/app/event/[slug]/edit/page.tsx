@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { fetchCategories, uploadImage, Category, fetchEventBySlug, updateMyEvent } from "@/lib/api";
 
-export default function EditEventPage({ params }: { params: { slug: string } }) {
+export default function EditEventPage({ params }: { params: Promise<{ slug: string }> }) {
   const router = useRouter();
   const [jwt, setJwt] = useState<string | null>(null);
   const [loadingEvent, setLoadingEvent] = useState(true);
   const [eventId, setEventId] = useState<number | null>(null);
+  const [slug, setSlug] = useState<string>("");
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -80,7 +81,9 @@ export default function EditEventPage({ params }: { params: { slug: string } }) 
     fetchCategories().then(setCats).catch(() => {});
     (async () => {
       try {
-        const ev = await fetchEventBySlug(params.slug);
+        const resolvedParams = await params;
+        setSlug(resolvedParams.slug);
+        const ev = await fetchEventBySlug(resolvedParams.slug);
         setEventId(ev.id);
         setTitle(ev.title);
         setDescription((ev.description as string) || "");
@@ -91,7 +94,7 @@ export default function EditEventPage({ params }: { params: { slug: string } }) 
         setCurrentImageUrl(ev.image?.url);
       } finally { setLoadingEvent(false); }
     })();
-  }, [params.slug]);
+  }, [params]);
 
   const onSubmit = async () => {
     if (!jwt || !eventId) return alert("Please login first.");
@@ -107,7 +110,7 @@ export default function EditEventPage({ params }: { params: { slug: string } }) 
         categoryId,
         imageId,
       }, jwt);
-      router.push(`/event/${params.slug}`);
+      router.push(`/event/${slug}`);
     } catch (e: unknown) {
       setError((e as Error)?.message || 'Unknown error');
     } finally { setSubmitting(false); }
@@ -206,7 +209,7 @@ export default function EditEventPage({ params }: { params: { slug: string } }) 
           </div>
           <div className="pt-2">
             <Button disabled={submitting} onClick={onSubmit}>Save</Button>
-            <Button variant="secondary" className="ml-2" onClick={() => router.push(`/event/${params.slug}`)}>Cancel</Button>
+            <Button variant="secondary" className="ml-2" onClick={() => router.push(`/event/${slug}`)}>Cancel</Button>
           </div>
           {error && <p className="text-sm text-red-500">{error}</p>}
         </CardContent>

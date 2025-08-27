@@ -74,13 +74,13 @@ export async function fetchUpcomingEvents(): Promise<EventItem[]> {
 
 export async function rsvp(eventId: number, status: RSVPStatus, jwt: string) {
   // First, try to find existing attendance
-  const existingAttendances = await api<any[]>(`/api/attendances?filters[user][$eq]=${JSON.parse(atob(jwt.split('.')[1])).id}&filters[event][$eq]=${eventId}`, {
+  const existingAttendances = await api<unknown[]>(`/api/attendances?filters[user][$eq]=${JSON.parse(atob(jwt.split('.')[1])).id}&filters[event][$eq]=${eventId}`, {
     headers: { Authorization: `Bearer ${jwt}` },
   });
   
   if (existingAttendances.length > 0) {
     // Update existing attendance
-    const attendanceId = existingAttendances[0].id;
+    const attendanceId = (existingAttendances[0] as { id: number }).id;
     return api(`/api/attendances/${attendanceId}`, {
       method: 'PUT',
       body: JSON.stringify({ data: { status } }),
