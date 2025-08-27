@@ -51,11 +51,18 @@ async function fetchMyAttendances(jwt: string): Promise<Attendance[]> {
         
         // Extract base status and event ID from encoded status
         const statusParts = attendanceData.status.split('_');
-        const baseStatus = statusParts[0] as RSVPStatus;
+        
+        // Handle "not_going" status which contains underscore
+        let baseStatus: RSVPStatus;
+        if (statusParts[0] === 'not' && statusParts[1] === 'going') {
+          baseStatus = 'not_going';
+        } else {
+          baseStatus = statusParts[0] as RSVPStatus;
+        }
         
         console.log('🔍 Status parts:', statusParts);
         
-        // Try to extract event ID from status (format: "going_u1_e59")
+        // Try to extract event ID from status (format: "going_u1_e59" or "not_going_u1_e59")
         let eventId: number | null = null;
         for (const part of statusParts) {
           if (part.startsWith('e') && part.length > 1) {
