@@ -78,11 +78,11 @@ export default function LikeButton({ eventId, initialLiked = false, className = 
       setLiked(!newLikedState);
     }
 
-    // Reset animation after effect completes
+    // Reset animation after quick effect completes
     setTimeout(() => {
       setIsAnimating(false);
       console.log(`✨ Animation completed for event ${eventId}`);
-    }, 600);
+    }, 300);
   };
 
   return (
@@ -106,7 +106,7 @@ export default function LikeButton({ eventId, initialLiked = false, className = 
               ? 'text-red-500 drop-shadow-lg' 
               : 'text-white group-hover:text-pink-300'
             }
-            ${isAnimating ? 'animate-pulse scale-125' : ''}
+            ${isAnimating ? 'animate-bounce scale-110' : ''}
           `}
           fill={liked ? 'currentColor' : 'none'}
           stroke="currentColor"
@@ -116,40 +116,17 @@ export default function LikeButton({ eventId, initialLiked = false, className = 
           <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
         </svg>
 
-        {/* 2025 Burst Effect */}
+        {/* Simple Heart Bump + Sparks */}
         {isAnimating && (
           <>
-            {/* Radial burst particles */}
-            {[...Array(8)].map((_, i) => (
+            {/* Quick sparks around heart */}
+            {[...Array(4)].map((_, i) => (
               <div
                 key={i}
-                className="absolute top-1/2 left-1/2 w-1 h-1 bg-gradient-to-r from-pink-400 to-red-400 rounded-full animate-ping"
+                className="absolute top-1/2 left-1/2 w-1 h-1 bg-red-400 rounded-full"
                 style={{
-                  transform: `translate(-50%, -50%) rotate(${i * 45}deg) translateY(-20px)`,
-                  animationDelay: `${i * 50}ms`,
-                  animationDuration: '600ms'
-                }}
-              />
-            ))}
-            
-            {/* Expanding ring effect */}
-            <div className="absolute top-1/2 left-1/2 w-0 h-0 border-2 border-pink-400/50 rounded-full animate-ping" 
-                 style={{ 
-                   transform: 'translate(-50%, -50%)',
-                   animation: 'ping 600ms cubic-bezier(0, 0, 0.2, 1) forwards'
-                 }} 
-            />
-            
-            {/* Sparkle effect */}
-            {[...Array(6)].map((_, i) => (
-              <div
-                key={`sparkle-${i}`}
-                className="absolute w-1 h-1 bg-gradient-to-r from-yellow-300 to-pink-300 rounded-full animate-bounce"
-                style={{
-                  top: `${20 + Math.random() * 60}%`,
-                  left: `${20 + Math.random() * 60}%`,
-                  animationDelay: `${i * 100}ms`,
-                  animationDuration: '800ms'
+                  transform: `translate(-50%, -50%) rotate(${i * 90}deg) translateY(-15px)`,
+                  animation: 'ping 300ms ease-out'
                 }}
               />
             ))}
