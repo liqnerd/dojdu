@@ -25,7 +25,7 @@ const fetcher = async (url: string) => {
 export function ClientFeatured() {
   const { data, error } = useSWR<EventItem[]>(`${STRAPI}/api/events/upcoming?size=12`, fetcher);
   return (
-    <Section title="Featured" subtitle="Hand-picked highlights for you" cta={<a className="text-sm underline" href="/upcoming">See all featured</a>}>
+    <Section title="Featured" subtitle="Hand-picked highlights" cta={<a className="text-sm underline" href="/upcoming">See all featured</a>}>
       <HorizontalScroll>
         {error ? (
           <p className="text-muted-foreground">Unable to load events</p>
