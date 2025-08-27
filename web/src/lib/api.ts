@@ -91,15 +91,16 @@ export async function rsvp(eventId: number, status: RSVPStatus, jwt: string) {
     throw new Error('No read permissions for attendances');
   }
   
-  // Try minimal data structure
+  // Now try with relations since minimal creation works
   try {
-    console.log('Trying minimal attendance creation...');
+    console.log('Trying with relations (connect syntax)...');
     const response = await api(`/api/attendances`, {
       method: 'POST',
       body: JSON.stringify({ 
         data: { 
-          status: status
-          // Trying without relations first
+          status: status,
+          user: { connect: [userId] },
+          event: { connect: [eventId] }
         } 
       }),
       headers: { 
@@ -108,13 +109,33 @@ export async function rsvp(eventId: number, status: RSVPStatus, jwt: string) {
       },
     });
     
-    console.log('✅ Minimal creation SUCCESS:', response);
+    console.log('✅ Relations creation SUCCESS:', response);
     return response;
-  } catch (minimalError) {
-    console.log('❌ Minimal creation failed:', minimalError);
+  } catch (relationError) {
+    console.log('❌ Relations failed, trying direct IDs:', relationError);
     
-    // If minimal fails, the content type itself has issues
-    throw new Error('Attendance creation not allowed - check Strapi permissions and schema');
+    try {
+      const response = await api(`/api/attendances`, {
+        method: 'POST',
+        body: JSON.stringify({ 
+          data: { 
+            status: status,
+            user: userId,
+            event: eventId
+          } 
+        }),
+        headers: { 
+          'Authorization': `Bearer ${jwt}`,
+          'Content-Type': 'application/json'
+        },
+      });
+      
+      console.log('✅ Direct IDs SUCCESS:', response);
+      return response;
+    } catch (directError) {
+      console.log('❌ All relation formats failed:', directError);
+      throw new Error('Could not create attendance with relations');
+    }
   }
 }
 

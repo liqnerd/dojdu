@@ -10,42 +10,25 @@ import EventCard from '@/components/EventCard';
 type Attendance = { id: number; status: RSVPStatus; event: EventItem };
 
 async function fetchMyAttendances(jwt: string): Promise<Attendance[]> {
+  console.log('🔍 Fetching user attendances...');
   const userId = JSON.parse(atob(jwt.split('.')[1])).id;
-  const response = await api<{data: unknown[]}>(`/api/attendances?filters[user][$eq]=${userId}&populate=event.venue,event.category,event.image`, {
-    headers: { Authorization: `Bearer ${jwt}` },
-  });
   
-  // Transform the response to match our expected format
-  return response.data.map((item: unknown) => {
-    const typedItem = item as { 
-      id: number; 
-      attributes: { 
-        status: RSVPStatus; 
-        event?: { 
-          data?: { 
-            id: number; 
-            attributes: EventItem 
-          } 
-        } 
-      } 
-    };
+  try {
+    // Test simple fetch first
+    const response = await api<{data: unknown[]}>(`/api/attendances?pagination[limit]=50`, {
+      headers: { Authorization: `Bearer ${jwt}` },
+    });
     
-    // Check if event data exists
-    if (!typedItem.attributes.event?.data) {
-      return null;
-    }
+    console.log('✅ Raw attendances data:', response);
     
-    const eventData = typedItem.attributes.event.data;
-    return {
-      id: typedItem.id,
-      status: typedItem.attributes.status,
-      event: {
-        ...eventData.attributes,
-        id: eventData.id,
-        attendanceCounts: { going: 0, maybe: 0, not_going: 0 } // We'll calculate this later if needed
-      }
-    };
-  }).filter(Boolean) as Attendance[]; // Filter out null entries
+    // For now, return empty array to avoid parsing errors
+    // We'll fix the filtering and data structure once we see the response format
+    return [];
+    
+  } catch (error) {
+    console.error('❌ Failed to fetch attendances:', error);
+    throw error;
+  }
 }
 
 export default function ProfilePage() {
