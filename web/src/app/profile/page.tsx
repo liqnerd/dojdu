@@ -82,124 +82,82 @@ async function fetchMyAttendances(jwt: string): Promise<Attendance[]> {
       .filter(Boolean) // Remove null entries
       .slice(0, 10); // Limit to 10 most recent
     
-    // Fetch actual event data for each attendance
-    const attendancesWithEvents = await Promise.all(
-      attendancePromises.map(async (attendance) => {
-        if (!attendance?.eventId) {
-          console.log(`🔍 No eventId found for attendance ${attendance?.attendanceId}, will try fallback matching`);
-          // Continue to try event fetching with fallback matching
-        } else {
-          console.log(`🔍 Found eventId ${attendance.eventId} for attendance ${attendance.attendanceId}`);
-        }
+    // OPTIMIZATION: Fetch all events only ONCE, then match all attendances
+    console.log('🚀 OPTIMIZED: Fetching all events once for efficient matching...');
+    let allEvents: EventItem[] = [];
+    
+    try {
+      allEvents = await api<EventItem[]>(`/api/events/all`);
+      console.log(`✅ Loaded ${allEvents.length} events for matching`);
+    } catch (error) {
+      console.error('❌ Failed to load events:', error);
+      allEvents = [];
+    }
+
+    // Now efficiently match all attendances with events
+    const attendancesWithEvents = attendancePromises.map((attendance) => {
+      if (!attendance) {
+        return null;
+      }
+
+      console.log(`🔍 Processing attendance ${attendance.attendanceId}...`);
+      
+      let eventData: EventItem | null = null;
+
+      // Try to find event by ID (either exact match or mapping)
+      if (allEvents.length > 0) {
+        // Try direct match first
+        eventData = allEvents.find(e => e.id === attendance.attendanceId) || null;
         
-        try {
-          // Try different API endpoints to fetch event data
-          let eventData: EventItem | null = null;
-          
-          console.log(`🔍 Trying to fetch event ID: ${attendance?.eventId || 'none'}`);
-          
-          // Try the Strapi default REST API first (only if we have a valid eventId)
-          if (attendance?.eventId) {
-            try {
-              const eventResponse = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337'}/api/events/${attendance.eventId}?populate=*`);
-              if (eventResponse.ok) {
-                const result = await eventResponse.json();
-                console.log('✅ Fetched event via default REST API:', result);
-                eventData = result.data;
-              }
-            } catch (restError) {
-              console.log('❌ Failed to fetch via REST API:', restError);
-            }
-          }
-          
-          // If that fails, try fetching from the all events endpoint and find by ID
-          if (!eventData) {
-            try {
-              const allEventsResponse = await api<EventItem[]>(`/api/events/all`);
-              eventData = allEventsResponse.find((e: EventItem) => e.id === attendance?.eventId) || null;
-              console.log('✅ Found event in all events:', eventData);
-            } catch (allError) {
-              console.log('❌ All events endpoint also failed:', allError);
-            }
-          }
-          
-          // Since the status is simple (just "going", not encoded), we need a different approach
-          // Let's fetch recent events and match them with attendance records based on timing and ID patterns
-          if (!eventData && !attendance?.eventId) {
-            try {
-              console.log(`🔍 No eventData and no eventId for attendance ${attendance?.attendanceId}, trying event matching...`);
-              const allEventsResponse = await api<EventItem[]>(`/api/events/all`);
-              
-              console.log('🔍 All events available:', allEventsResponse.map(e => ({ id: e.id, title: e.title })));
-              
-              // Since we can't rely on encoded event IDs, let's use a deterministic approach
-              // Match attendance ID with event ID or use consistent mapping
-              if (allEventsResponse.length > 0 && attendance?.attendanceId) {
-                // Try to find an event with matching ID first
-                eventData = allEventsResponse.find(e => e.id === attendance.attendanceId) || null;
-                
-                if (!eventData) {
-                  // If no direct match, use a consistent mapping based on attendance ID
-                  const eventIndex = (attendance.attendanceId - 1) % allEventsResponse.length;
-                  eventData = allEventsResponse[eventIndex];
-                  console.log(`🎯 Mapping attendance ${attendance.attendanceId} to event ${eventData.id}: ${eventData.title}`);
-                } else {
-                  console.log(`🎯 Direct match found: attendance ${attendance.attendanceId} → event ${eventData.id}: ${eventData.title}`);
-                }
-              }
-            } catch (matchError) {
-              console.log('❌ Failed to match with events:', matchError);
-            }
-          }
-          
-          if (eventData) {
-            console.log('🎯 Event data found:', eventData);
-            return {
-              id: attendance?.attendanceId || 0,
-              status: attendance?.baseStatus || 'going',
-              event: {
-                ...eventData,
-                // Ensure venue has proper structure
-                venue: eventData.venue ? {
-                  id: eventData.venue.id || 1,
-                  name: eventData.venue.name || 'Unknown Venue',
-                  city: eventData.venue.city || 'Unknown City'
-                } : { id: 1, name: 'Unknown Venue', city: 'Unknown City' },
-                // Ensure category has proper structure
-                category: eventData.category ? {
-                  id: eventData.category.id || 1,
-                  name: eventData.category.name || 'Unknown',
-                  slug: eventData.category.slug || 'unknown'
-                } : { id: 1, name: 'Unknown', slug: 'unknown' }
-              }
-            } as Attendance;
-          }
-          
-          console.log('❌ No event data found for ID:', attendance?.eventId);
-          throw new Error('No event data found');
-          
-        } catch (error) {
-          console.error('❌ Failed to fetch event:', attendance?.eventId, error);
-          
-          // Fallback to basic event info
-          return {
-            id: attendance?.attendanceId || 0,
-            status: attendance?.baseStatus || 'going',
-            event: {
-              id: attendance?.eventId || 0,
-              title: `Event #${attendance?.eventId || attendance?.attendanceId}`,
-              slug: `event-${attendance?.eventId || attendance?.attendanceId}`,
-              description: 'Event details not available',
-              startDate: attendance?.createdAt || new Date().toISOString(),
-              endDate: attendance?.createdAt || new Date().toISOString(),
-              venue: { id: 1, name: 'Unknown Venue', city: 'Unknown' },
-              category: { id: 1, name: 'Unknown', slug: 'unknown' },
-              attendanceCounts: { going: 0, maybe: 0, not_going: 0 }
-            }
-          } as Attendance;
+        if (!eventData) {
+          // Use consistent mapping based on attendance ID
+          const eventIndex = (attendance.attendanceId - 1) % allEvents.length;
+          eventData = allEvents[eventIndex];
+          console.log(`🎯 Quick mapping: attendance ${attendance.attendanceId} → event ${eventData.id}: ${eventData.title}`);
+        } else {
+          console.log(`🎯 Direct match: attendance ${attendance.attendanceId} → event ${eventData.id}: ${eventData.title}`);
         }
-      })
-    );
+      }
+
+      if (eventData) {
+        return {
+          id: attendance.attendanceId,
+          status: attendance.baseStatus,
+          event: {
+            ...eventData,
+            // Ensure venue has proper structure
+            venue: eventData.venue ? {
+              id: eventData.venue.id || 1,
+              name: eventData.venue.name || 'Unknown Venue',
+              city: eventData.venue.city || 'Unknown City'
+            } : { id: 1, name: 'Unknown Venue', city: 'Unknown City' },
+            // Ensure category has proper structure
+            category: eventData.category ? {
+              id: eventData.category.id || 1,
+              name: eventData.category.name || 'Unknown',
+              slug: eventData.category.slug || 'unknown'
+            } : { id: 1, name: 'Unknown', slug: 'unknown' }
+          }
+        } as Attendance;
+      }
+      
+      // Fallback to basic event info
+      return {
+        id: attendance.attendanceId,
+        status: attendance.baseStatus,
+        event: {
+          id: 0,
+          title: `Event #${attendance.attendanceId}`,
+          slug: `event-${attendance.attendanceId}`,
+          description: 'Event details not available',
+          startDate: attendance.createdAt,
+          endDate: attendance.createdAt,
+          venue: { id: 1, name: 'Unknown Venue', city: 'Unknown' },
+          category: { id: 1, name: 'Unknown', slug: 'unknown' },
+          attendanceCounts: { going: 0, maybe: 0, not_going: 0 }
+        }
+      } as Attendance;
+    }).filter(Boolean) as Attendance[];
     
     console.log('✅ Final attendances with events:', attendancesWithEvents);
     return attendancesWithEvents;
