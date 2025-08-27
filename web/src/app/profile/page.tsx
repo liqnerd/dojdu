@@ -98,16 +98,18 @@ export default function ProfilePage() {
       if (jwt) {
         try {
           const atts = await fetchMyAttendances(jwt);
-          setData(atts);
+          setData(Array.isArray(atts) ? atts : []);
         } catch (error) {
           console.error('Failed to load RSVPs:', error);
           setErrorRsvp('Could not load your RSVPs: ' + (error as Error).message);
+          setData([]); // Ensure data is always an array
         }
         try {
           const mine = await fetchMyEvents(jwt);
-          setMyEvents(mine);
+          setMyEvents(Array.isArray(mine) ? mine : []);
         } catch {
           setErrorMine('Could not load your events');
+          setMyEvents([]); // Ensure myEvents is always an array
         }
       }
     })();
@@ -115,7 +117,13 @@ export default function ProfilePage() {
 
   const groups = useMemo(() => {
     const g: Record<RSVPStatus, Attendance[]> = { going: [], maybe: [], not_going: [] };
-    for (const a of data) g[a.status].push(a);
+    if (data && Array.isArray(data)) {
+      for (const a of data) {
+        if (a && a.status && g[a.status]) {
+          g[a.status].push(a);
+        }
+      }
+    }
     return g;
   }, [data]);
 
