@@ -69,6 +69,9 @@ async function fetchMyAttendances(jwt: string): Promise<Attendance[]> {
         
         console.log('🔍 Extracted:', { baseStatus, eventId, attendanceId, fullStatus: attendanceData.status });
         
+        // Log the exact values to debug
+        console.log(`🔍 Debug: attendanceId=${attendanceId}, eventId=${eventId}, baseStatus="${baseStatus}"`);
+        
         return {
           attendanceId,
           baseStatus,
@@ -83,22 +86,10 @@ async function fetchMyAttendances(jwt: string): Promise<Attendance[]> {
     const attendancesWithEvents = await Promise.all(
       attendancePromises.map(async (attendance) => {
         if (!attendance?.eventId) {
-          // If no event ID found, create a basic placeholder
-          return {
-            id: attendance?.attendanceId || 0,
-            status: attendance?.baseStatus || 'going',
-            event: {
-              id: 0,
-              title: `RSVP #${attendance?.attendanceId}`,
-              slug: 'unknown',
-              description: 'Event details not available',
-              startDate: attendance?.createdAt || new Date().toISOString(),
-              endDate: attendance?.createdAt || new Date().toISOString(),
-              venue: { id: 1, name: 'Unknown Venue', city: 'Unknown' },
-              category: { id: 1, name: 'Unknown', slug: 'unknown' },
-              attendanceCounts: { going: 0, maybe: 0, not_going: 0 }
-            }
-          } as Attendance;
+          console.log(`🔍 No eventId found for attendance ${attendance?.attendanceId}, will try fallback matching`);
+          // Continue to try event fetching with fallback matching
+        } else {
+          console.log(`🔍 Found eventId ${attendance.eventId} for attendance ${attendance.attendanceId}`);
         }
         
         try {
@@ -136,7 +127,7 @@ async function fetchMyAttendances(jwt: string): Promise<Attendance[]> {
           // Let's fetch recent events and match them with attendance records based on timing and ID patterns
           if (!eventData && !attendance.eventId) {
             try {
-              console.log('🔍 Status is simple format, fetching all events for matching...');
+              console.log(`🔍 No eventData and no eventId for attendance ${attendance.attendanceId}, trying event matching...`);
               const allEventsResponse = await api<EventItem[]>(`/api/events/all`);
               
               console.log('🔍 All events available:', allEventsResponse.map(e => ({ id: e.id, title: e.title })));
