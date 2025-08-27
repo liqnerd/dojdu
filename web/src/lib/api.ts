@@ -258,9 +258,12 @@ export async function likeEvent(eventId: number, jwt: string) {
       } catch (deleteError) {
         console.error(`❌ DELETE FAILED for attendance ${attendanceId}:`, deleteError);
         
-        // Check if it's just a JSON parsing error (DELETE might have actually worked)
-        if (deleteError instanceof Error && deleteError.message.includes('Unexpected end of JSON input')) {
-          console.log(`🎯 DELETE likely succeeded but returned empty response, treating as success`);
+        // Check if it's just a JSON parsing error from our old api() function usage
+        if (deleteError instanceof Error && (
+          deleteError.message.includes('Unexpected end of JSON input') ||
+          deleteError.message.includes('Failed to execute \'json\' on \'Response\'')
+        )) {
+          console.log(`🎯 DELETE likely succeeded but had JSON parsing issue, treating as success`);
           return { liked: false };
         }
         
@@ -289,6 +292,10 @@ export async function likeEvent(eventId: number, jwt: string) {
             });
             
             if (!updateResponse.ok) {
+              if (updateResponse.status === 404) {
+                console.log(`🎯 UPDATE got 404 - attendance was already deleted! DELETE must have worked.`);
+                return { liked: false };
+              }
               throw new Error(`UPDATE failed with status ${updateResponse.status}`);
             }
             
@@ -378,9 +385,17 @@ export async function fetchMyLikes(jwt: string): Promise<Like[]> {
         const likeId = item.id || index + 1;
         
         const status = 'status' in likeData ? likeData.status : undefined;
-        if (!status || !status.startsWith('liked') || status.startsWith('unliked')) {
-          return null; // Skip unliked records
+        if (!status) {
+          return null;
         }
+        
+        // Only include records that start with "liked_" but NOT "unliked_"
+        if (!status.startsWith('liked_') || status.startsWith('unliked_')) {
+          console.log(`🚫 Skipping record with status: "${status}"`);
+          return null;
+        }
+        
+        console.log(`✅ Including liked record with status: "${status}"`);
         
         // Extract event ID from encoded status (format: "liked_u1_e59")
         const statusParts = status.split('_');
@@ -470,10 +485,12 @@ export async function isEventLiked(eventId: number, jwt: string): Promise<boolea
     // Filter out "unliked" records - only count actual "liked" records
     const actualLikes = likedResponse.data.filter(item => {
       const status = item.attributes?.status || (item as { status?: string }).status;
-      return status && status.startsWith('liked_') && !status.startsWith('unliked_');
+      const isLiked = status && status.startsWith('liked_') && !status.startsWith('unliked_');
+      console.log(`🔍 Checking attendance record: status="${status}", isLiked=${isLiked}`);
+      return isLiked;
     });
     
-    console.log(`🔍 isEventLiked check for event ${eventId}: found ${actualLikes.length} actual likes`);
+    console.log(`🔍 isEventLiked check for event ${eventId}: found ${actualLikes.length} actual likes out of ${likedResponse.data.length} total records`);
     return actualLikes.length > 0;
   } catch (error) {
     console.log(`❌ isEventLiked error for event ${eventId}:`, error);
