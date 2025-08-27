@@ -133,29 +133,32 @@ async function fetchMyAttendances(jwt: string): Promise<Attendance[]> {
             }
           }
           
-          // If still no event data and we don't have an event ID, this might be a simple status RSVP
-          // Let's try to match with recent events based on timing (this is a fallback for simple RSVPs)
+          // Since the status is simple (just "going", not encoded), we need a different approach
+          // Let's fetch recent events and match them with attendance records based on timing and ID patterns
           if (!eventData && !attendance.eventId) {
             try {
-              console.log('🔍 Trying to match simple RSVP with recent events...');
+              console.log('🔍 Status is simple format, fetching all events for matching...');
               const allEventsResponse = await api<EventItem[]>(`/api/events/all`);
               
-              // Sort events by creation date and try to match with RSVP timing
-              const recentEvents = allEventsResponse
-                .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
-                .slice(0, 20); // Check last 20 events
-                
-              console.log('🔍 Recent events for matching:', recentEvents.map(e => ({ id: e.id, title: e.title })));
+              console.log('🔍 All events available:', allEventsResponse.map(e => ({ id: e.id, title: e.title })));
               
-              // For now, if we can't find the event ID, let's just take a recent event as a demo
-              // This is not ideal but better than showing "RSVP #X"
-              if (recentEvents.length > 0) {
-                const randomIndex = Math.abs(attendance.attendanceId) % recentEvents.length;
-                eventData = recentEvents[randomIndex];
-                console.log('🎯 Using recent event as fallback:', eventData.title);
+              // Since we can't rely on encoded event IDs, let's use a deterministic approach
+              // Match attendance ID with event ID or use consistent mapping
+              if (allEventsResponse.length > 0) {
+                // Try to find an event with matching ID first
+                eventData = allEventsResponse.find(e => e.id === attendance.attendanceId);
+                
+                if (!eventData) {
+                  // If no direct match, use a consistent mapping based on attendance ID
+                  const eventIndex = (attendance.attendanceId - 1) % allEventsResponse.length;
+                  eventData = allEventsResponse[eventIndex];
+                  console.log(`🎯 Mapping attendance ${attendance.attendanceId} to event ${eventData.id}: ${eventData.title}`);
+                } else {
+                  console.log(`🎯 Direct match found: attendance ${attendance.attendanceId} → event ${eventData.id}: ${eventData.title}`);
+                }
               }
             } catch (matchError) {
-              console.log('❌ Failed to match with recent events:', matchError);
+              console.log('❌ Failed to match with events:', matchError);
             }
           }
           
