@@ -15,8 +15,13 @@ export default function EventCard({ event, showActions }: Props) {
   const onRSVP = async (status: RSVPStatus) => {
     const token = localStorage.getItem("jwt");
     if (!token) return alert("Please login first.");
-    await rsvp(event.id, status, token);
-    alert("Saved");
+    try {
+      await rsvp(event.id, status, token);
+      alert("Saved");
+    } catch (error) {
+      console.error("RSVP failed:", error);
+      alert("Failed to save RSVP: " + (error as Error).message);
+    }
   };
 
   const img = event.image?.url ? getStrapiImageUrl(event.image.url) : undefined;

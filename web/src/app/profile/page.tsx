@@ -32,8 +32,9 @@ export default function ProfilePage() {
         try {
           const atts = await fetchMyAttendances(jwt);
           setData(atts);
-        } catch {
-          setErrorRsvp('Could not load your RSVPs');
+        } catch (error) {
+          console.error('Failed to load RSVPs:', error);
+          setErrorRsvp('Could not load your RSVPs: ' + (error as Error).message);
         }
         try {
           const mine = await fetchMyEvents(jwt);

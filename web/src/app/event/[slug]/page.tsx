@@ -29,6 +29,9 @@ export default function EventDetail({ params }: { params: Promise<{ slug: string
     try {
       await rsvp(event.id, status, jwt);
       alert('Saved');
+    } catch (error) {
+      console.error("RSVP failed:", error);
+      alert('Failed to save RSVP: ' + (error as Error).message);
     } finally {
       setLoading(false);
     }
