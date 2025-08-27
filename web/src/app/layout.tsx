@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Dojdu",
+  title: "Dojdu v2",
   description: "Find events, RSVP, and go together.",
 };
 
