@@ -96,11 +96,11 @@ async function fetchMyAttendances(jwt: string): Promise<Attendance[]> {
           // Try different API endpoints to fetch event data
           let eventData: EventItem | null = null;
           
-          console.log(`🔍 Trying to fetch event ID: ${attendance.eventId}`);
+          console.log(`🔍 Trying to fetch event ID: ${attendance?.eventId || 'none'}`);
           
           // Try the Strapi default REST API first
           try {
-            const eventResponse = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337'}/api/events/${attendance.eventId}?populate=*`);
+            const eventResponse = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337'}/api/events/${attendance?.eventId}?populate=*`);
             if (eventResponse.ok) {
               const result = await eventResponse.json();
               console.log('✅ Fetched event via default REST API:', result);
@@ -116,7 +116,7 @@ async function fetchMyAttendances(jwt: string): Promise<Attendance[]> {
           if (!eventData) {
             try {
               const allEventsResponse = await api<EventItem[]>(`/api/events/all`);
-              eventData = allEventsResponse.find((e: EventItem) => e.id === attendance.eventId) || null;
+              eventData = allEventsResponse.find((e: EventItem) => e.id === attendance?.eventId) || null;
               console.log('✅ Found event in all events:', eventData);
             } catch (allError) {
               console.log('❌ All events endpoint also failed:', allError);
@@ -125,16 +125,16 @@ async function fetchMyAttendances(jwt: string): Promise<Attendance[]> {
           
           // Since the status is simple (just "going", not encoded), we need a different approach
           // Let's fetch recent events and match them with attendance records based on timing and ID patterns
-          if (!eventData && !attendance.eventId) {
+          if (!eventData && !attendance?.eventId) {
             try {
-              console.log(`🔍 No eventData and no eventId for attendance ${attendance.attendanceId}, trying event matching...`);
+              console.log(`🔍 No eventData and no eventId for attendance ${attendance?.attendanceId}, trying event matching...`);
               const allEventsResponse = await api<EventItem[]>(`/api/events/all`);
               
               console.log('🔍 All events available:', allEventsResponse.map(e => ({ id: e.id, title: e.title })));
               
               // Since we can't rely on encoded event IDs, let's use a deterministic approach
               // Match attendance ID with event ID or use consistent mapping
-              if (allEventsResponse.length > 0) {
+              if (allEventsResponse.length > 0 && attendance?.attendanceId) {
                 // Try to find an event with matching ID first
                 eventData = allEventsResponse.find(e => e.id === attendance.attendanceId) || null;
                 
@@ -155,8 +155,8 @@ async function fetchMyAttendances(jwt: string): Promise<Attendance[]> {
           if (eventData) {
             console.log('🎯 Event data found:', eventData);
             return {
-              id: attendance.attendanceId,
-              status: attendance.baseStatus,
+              id: attendance?.attendanceId || 0,
+              status: attendance?.baseStatus || 'going',
               event: {
                 ...eventData,
                 // Ensure venue has proper structure
@@ -175,23 +175,23 @@ async function fetchMyAttendances(jwt: string): Promise<Attendance[]> {
             } as Attendance;
           }
           
-          console.log('❌ No event data found for ID:', attendance.eventId);
+          console.log('❌ No event data found for ID:', attendance?.eventId);
           throw new Error('No event data found');
           
         } catch (error) {
-          console.error('❌ Failed to fetch event:', attendance.eventId, error);
+          console.error('❌ Failed to fetch event:', attendance?.eventId, error);
           
           // Fallback to basic event info
           return {
-            id: attendance.attendanceId,
-            status: attendance.baseStatus,
+            id: attendance?.attendanceId || 0,
+            status: attendance?.baseStatus || 'going',
             event: {
-              id: attendance.eventId,
-              title: `Event #${attendance.eventId}`,
-              slug: `event-${attendance.eventId}`,
+              id: attendance?.eventId || 0,
+              title: `Event #${attendance?.eventId || attendance?.attendanceId}`,
+              slug: `event-${attendance?.eventId || attendance?.attendanceId}`,
               description: 'Event details not available',
-              startDate: attendance.createdAt,
-              endDate: attendance.createdAt,
+              startDate: attendance?.createdAt || new Date().toISOString(),
+              endDate: attendance?.createdAt || new Date().toISOString(),
               venue: { id: 1, name: 'Unknown Venue', city: 'Unknown' },
               category: { id: 1, name: 'Unknown', slug: 'unknown' },
               attendanceCounts: { going: 0, maybe: 0, not_going: 0 }
