@@ -13,6 +13,7 @@ export default [
         'https://localhost:3000',
         'https://*.vercel.app',
         'https://dojdu-4npdeutqd-polaklxx-4230s-projects.vercel.app',
+        /https:\/\/dojdu.*\.vercel\.app$/,
       ],
       headers: [
         'Content-Type',
