@@ -75,25 +75,25 @@ export async function fetchUpcomingEvents(): Promise<EventItem[]> {
 export async function rsvp(eventId: number, status: RSVPStatus, jwt: string) {
   const userId = JSON.parse(atob(jwt.split('.')[1])).id;
   
-  // First, try to find existing attendance using Strapi REST API
-  const existingResponse = await api<{data: unknown[]}>(`/api/attendances?filters[user][id][$eq]=${userId}&filters[event][id][$eq]=${eventId}`, {
-    headers: { Authorization: `Bearer ${jwt}` },
-  });
-  
-  const existingAttendances = existingResponse.data;
-  
-  if (existingAttendances.length > 0) {
-    // Update existing attendance
-    const attendanceId = (existingAttendances[0] as { id: number }).id;
-    return api(`/api/attendances/${attendanceId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ data: { status } }),
+  // Simplified approach: just create/update without checking existing
+  // Let the backend handle the unique constraint
+  try {
+    // Try format 1: direct IDs (most common)
+    return await api(`/api/attendances`, {
+      method: 'POST',
+      body: JSON.stringify({ 
+        data: { 
+          status, 
+          user: userId,
+          event: eventId
+        } 
+      }),
       headers: { Authorization: `Bearer ${jwt}` },
     });
-  } else {
-    // Create new attendance - try multiple formats
+  } catch (error1) {
+    console.log('Direct ID format failed, trying connect format:', error1);
     try {
-      // Try format 1: connect syntax
+      // Try format 2: connect syntax
       return await api(`/api/attendances`, {
         method: 'POST',
         body: JSON.stringify({ 
@@ -105,36 +105,20 @@ export async function rsvp(eventId: number, status: RSVPStatus, jwt: string) {
         }),
         headers: { Authorization: `Bearer ${jwt}` },
       });
-    } catch (error1) {
-      console.log('Connect format failed, trying direct ID format:', error1);
-      try {
-        // Try format 2: direct IDs
-        return await api(`/api/attendances`, {
-          method: 'POST',
-          body: JSON.stringify({ 
-            data: { 
-              status, 
-              user: userId,
-              event: eventId
-            } 
-          }),
-          headers: { Authorization: `Bearer ${jwt}` },
-        });
-      } catch (error2) {
-        console.log('Direct ID format failed, trying set format:', error2);
-        // Try format 3: set syntax
-        return await api(`/api/attendances`, {
-          method: 'POST',
-          body: JSON.stringify({ 
-            data: { 
-              status, 
-              user: { set: [userId] },
-              event: { set: [eventId] }
-            } 
-          }),
-          headers: { Authorization: `Bearer ${jwt}` },
-        });
-      }
+    } catch (error2) {
+      console.log('Connect format failed, trying set format:', error2);
+      // Try format 3: set syntax
+      return await api(`/api/attendances`, {
+        method: 'POST',
+        body: JSON.stringify({ 
+          data: { 
+            status, 
+            user: { set: [userId] },
+            event: { set: [eventId] }
+          } 
+        }),
+        headers: { Authorization: `Bearer ${jwt}` },
+      });
     }
   }
 }

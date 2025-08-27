@@ -11,7 +11,7 @@ type Attendance = { id: number; status: RSVPStatus; event: EventItem };
 
 async function fetchMyAttendances(jwt: string): Promise<Attendance[]> {
   const userId = JSON.parse(atob(jwt.split('.')[1])).id;
-  const response = await api<{data: unknown[]}>(`/api/attendances?filters[user][id][$eq]=${userId}&populate=event.venue,event.category,event.image`, {
+  const response = await api<{data: unknown[]}>(`/api/attendances?filters[user][$eq]=${userId}&populate=event.venue,event.category,event.image`, {
     headers: { Authorization: `Bearer ${jwt}` },
   });
   
