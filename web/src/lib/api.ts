@@ -91,14 +91,14 @@ export async function rsvp(eventId: number, status: RSVPStatus, jwt: string) {
       headers: { Authorization: `Bearer ${jwt}` },
     });
   } else {
-    // Create new attendance
+    // Create new attendance - use Strapi v5 relation format
     return api(`/api/attendances`, {
       method: 'POST',
       body: JSON.stringify({ 
         data: { 
           status, 
-          user: userId,
-          event: eventId 
+          user: { connect: [userId] },
+          event: { connect: [eventId] }
         } 
       }),
       headers: { Authorization: `Bearer ${jwt}` },
