@@ -99,15 +99,62 @@ async function fetchMyAttendances(jwt: string): Promise<Attendance[]> {
         }
         
         try {
-          // Fetch the actual event data
-          const eventResponse = await api<{data: EventItem}>(`/api/events/${attendance.eventId}?populate=*`);
-          console.log('✅ Fetched event:', eventResponse.data);
+          // Try different API endpoints to fetch event data
+          let eventData: EventItem | null = null;
           
-          return {
-            id: attendance.attendanceId,
-            status: attendance.baseStatus,
-            event: eventResponse.data
-          } as Attendance;
+          console.log(`🔍 Trying to fetch event ID: ${attendance.eventId}`);
+          
+          // Try the Strapi default REST API first
+          try {
+            const eventResponse = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337'}/api/events/${attendance.eventId}?populate=*`);
+            if (eventResponse.ok) {
+              const result = await eventResponse.json();
+              console.log('✅ Fetched event via default REST API:', result);
+              eventData = result.data;
+            } else {
+              console.log('❌ Default REST API failed:', eventResponse.status);
+            }
+          } catch (restError) {
+            console.log('❌ Failed to fetch via REST API:', restError);
+          }
+          
+          // If that fails, try fetching from the all events endpoint and find by ID
+          if (!eventData) {
+            try {
+              const allEventsResponse = await api<EventItem[]>(`/api/events/all`);
+              eventData = allEventsResponse.find((e: EventItem) => e.id === attendance.eventId) || null;
+              console.log('✅ Found event in all events:', eventData);
+            } catch (allError) {
+              console.log('❌ All events endpoint also failed:', allError);
+            }
+          }
+          
+          if (eventData) {
+            console.log('🎯 Event data found:', eventData);
+            return {
+              id: attendance.attendanceId,
+              status: attendance.baseStatus,
+              event: {
+                ...eventData,
+                // Ensure venue has proper structure
+                venue: eventData.venue ? {
+                  id: eventData.venue.id || 1,
+                  name: eventData.venue.name || 'Unknown Venue',
+                  city: eventData.venue.city || 'Unknown City'
+                } : { id: 1, name: 'Unknown Venue', city: 'Unknown City' },
+                // Ensure category has proper structure
+                category: eventData.category ? {
+                  id: eventData.category.id || 1,
+                  name: eventData.category.name || 'Unknown',
+                  slug: eventData.category.slug || 'unknown'
+                } : { id: 1, name: 'Unknown', slug: 'unknown' }
+              }
+            } as Attendance;
+          }
+          
+          console.log('❌ No event data found for ID:', attendance.eventId);
+          throw new Error('No event data found');
+          
         } catch (error) {
           console.error('❌ Failed to fetch event:', attendance.eventId, error);
           
