@@ -218,21 +218,63 @@ export async function likeEvent(eventId: number, jwt: string) {
     const checkUrl = `/api/attendances?filters[status][$contains]=liked_u${userId}_e${eventId}&pagination[limit]=1`;
     console.log(`🔍 CHECKING: ${checkUrl}`);
     
-    const existingLikes = await api<{ data: { id: number; attributes?: { status?: string } }[] }>(checkUrl, {
+    const existingLikes = await api<{ data: { id: number; documentId?: number; attributes?: { status?: string } }[] }>(checkUrl, {
       headers: { 'Authorization': `Bearer ${jwt}` },
     });
     
     console.log(`📊 EXISTING LIKES FOUND: ${existingLikes.data.length}`, existingLikes.data);
     
     if (existingLikes.data.length > 0) {
-      console.log(`💔 UNLIKING: Deleting attendance ${existingLikes.data[0].id}`);
-      // Unlike - delete the existing like
-      await api(`/api/attendances/${existingLikes.data[0].id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${jwt}` },
-      });
-      console.log(`✅ UNLIKED: Successfully deleted attendance ${existingLikes.data[0].id}`);
-      return { liked: false };
+      const attendanceToDelete = existingLikes.data[0];
+      console.log(`💔 UNLIKING: Found attendance to delete:`, attendanceToDelete);
+      
+      // Get the correct ID (handle both Strapi v4 and v5 formats)
+      const attendanceId = attendanceToDelete.id || attendanceToDelete.documentId;
+      console.log(`🔑 Using attendance ID: ${attendanceId}`);
+      
+      if (!attendanceId) {
+        console.error(`❌ No valid ID found in attendance:`, attendanceToDelete);
+        throw new Error('Cannot find attendance ID to delete');
+      }
+      
+      try {
+        console.log(`🗑️ DELETING: /api/attendances/${attendanceId}`);
+        const deleteResponse = await api(`/api/attendances/${attendanceId}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${jwt}` },
+        });
+        console.log(`✅ UNLIKED: Successfully deleted attendance ${attendanceId}`, deleteResponse);
+        return { liked: false };
+      } catch (deleteError) {
+        console.error(`❌ DELETE FAILED for attendance ${attendanceId}:`, deleteError);
+        
+        // Try alternative approach: Check if it's a permission issue
+        if (deleteError instanceof Error && deleteError.message.includes('403')) {
+          throw new Error('Permission denied - check Strapi DELETE permissions for Attendance');
+        } else if (deleteError instanceof Error && deleteError.message.includes('404')) {
+          throw new Error('Attendance not found - it may have been already deleted');
+        } else {
+          // FALLBACK: Try updating status to "unliked" instead of deleting
+          console.log(`🔄 FALLBACK: Trying to update status to "unliked" instead of deleting...`);
+          try {
+            const updateResponse = await api(`/api/attendances/${attendanceId}`, {
+              method: 'PUT',
+              body: JSON.stringify({ 
+                data: { status: `unliked_u${userId}_e${eventId}` } 
+              }),
+              headers: { 
+                'Authorization': `Bearer ${jwt}`,
+                'Content-Type': 'application/json'
+              },
+            });
+            console.log(`✅ UNLIKED via UPDATE: Changed status to unliked`, updateResponse);
+            return { liked: false };
+          } catch (updateError) {
+            console.error(`❌ UPDATE FALLBACK also failed:`, updateError);
+            throw new Error(`Failed to unlike: ${deleteError}`);
+          }
+        }
+      }
     } else {
       console.log(`❤️ LIKING: Creating new attendance - trying RSVP approach`);
       
@@ -308,8 +350,8 @@ export async function fetchMyLikes(jwt: string): Promise<Like[]> {
         const likeId = item.id || index + 1;
         
         const status = 'status' in likeData ? likeData.status : undefined;
-        if (!status || !status.startsWith('liked')) {
-          return null;
+        if (!status || !status.startsWith('liked') || status.startsWith('unliked')) {
+          return null; // Skip unliked records
         }
         
         // Extract event ID from encoded status (format: "liked_u1_e59")
@@ -391,11 +433,22 @@ export async function fetchMyLikes(jwt: string): Promise<Like[]> {
 export async function isEventLiked(eventId: number, jwt: string): Promise<boolean> {
   try {
     const userId = JSON.parse(atob(jwt.split('.')[1])).id;
-    const response = await api<{ data: { id: number }[] }>(`/api/attendances?filters[status][$contains]=liked_u${userId}_e${eventId}&pagination[limit]=1`, {
+    
+    // Check for liked status (not unliked)
+    const likedResponse = await api<{ data: { id: number; attributes?: { status?: string } }[] }>(`/api/attendances?filters[status][$contains]=liked_u${userId}_e${eventId}&pagination[limit]=10`, {
       headers: { 'Authorization': `Bearer ${jwt}` },
     });
-    return response.data.length > 0;
-  } catch {
+    
+    // Filter out "unliked" records - only count actual "liked" records
+    const actualLikes = likedResponse.data.filter(item => {
+      const status = item.attributes?.status || (item as { status?: string }).status;
+      return status && status.startsWith('liked_') && !status.startsWith('unliked_');
+    });
+    
+    console.log(`🔍 isEventLiked check for event ${eventId}: found ${actualLikes.length} actual likes`);
+    return actualLikes.length > 0;
+  } catch (error) {
+    console.log(`❌ isEventLiked error for event ${eventId}:`, error);
     return false;
   }
 }
