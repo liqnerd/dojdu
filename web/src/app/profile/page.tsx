@@ -26,18 +26,20 @@ async function fetchMyAttendances(jwt: string): Promise<Attendance[]> {
         console.log('🔍 Raw attendance item:', item);
         
         // Handle different possible data structures
-        let attendanceData: any;
-        let attendanceId: number;
+        let attendanceData: { status?: string; createdAt?: string; [key: string]: unknown } | undefined;
+        let attendanceId = 0;
         
         if (item && typeof item === 'object') {
           // Check if it's Strapi v4 format (with attributes)
           if ('attributes' in item) {
-            attendanceData = (item as any).attributes;
-            attendanceId = (item as any).id;
+            const typedItem = item as { id: number; attributes: { status?: string; createdAt?: string; [key: string]: unknown } };
+            attendanceData = typedItem.attributes;
+            attendanceId = typedItem.id;
           } else {
             // Check if it's Strapi v5 format (direct properties)
-            attendanceData = item;
-            attendanceId = (item as any).id || (item as any).documentId;
+            const typedItem = item as { id?: number; documentId?: number; status?: string; createdAt?: string; [key: string]: unknown };
+            attendanceData = typedItem;
+            attendanceId = typedItem.id || typedItem.documentId || 0;
           }
         }
         
@@ -66,9 +68,9 @@ async function fetchMyAttendances(jwt: string): Promise<Attendance[]> {
             category: { id: 1, name: 'Various', slug: 'various' },
             attendanceCounts: { going: 0, maybe: 0, not_going: 0 }
           }
-        };
+        } as Attendance;
       })
-      .filter(Boolean) // Remove null entries
+      .filter((item): item is Attendance => item !== null) // Remove null entries with proper type guard
       .slice(0, 10); // Show last 10 RSVPs
     
     console.log('✅ Processed attendances:', userAttendances);
