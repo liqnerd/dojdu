@@ -206,9 +206,9 @@ export async function fetchUpcomingEventsWith(params: Record<string, string | un
   return api<EventItem[]>(`/api/events/upcoming${qs}`);
 }
 
-// Like functionality - using attendance system with "liked" status
+// Like functionality - using attendance system with "liked" status (EXACT COPY of working RSVP approach)
 export async function likeEvent(eventId: number, jwt: string) {
-  console.log(`🔥 API CALL: likeEvent(${eventId}, jwt)`);
+  console.log(`🔥 API CALL: likeEvent(${eventId}, jwt) - Using RSVP approach`);
   
   const userId = JSON.parse(atob(jwt.split('.')[1])).id;
   console.log(`👤 User ID: ${userId}`);
@@ -234,26 +234,52 @@ export async function likeEvent(eventId: number, jwt: string) {
       console.log(`✅ UNLIKED: Successfully deleted attendance ${existingLikes.data[0].id}`);
       return { liked: false };
     } else {
-      console.log(`❤️ LIKING: Creating new attendance with status "liked_u${userId}_e${eventId}"`);
-      // Like - create new attendance with "liked" status (reusing RSVP system)
-      const createData = { 
-        data: { 
+      console.log(`❤️ LIKING: Creating new attendance - trying RSVP approach`);
+      
+      // EXACT COPY of working RSVP system approach
+      try {
+        console.log('Creating LIKE with metadata in status...');
+        const likeData = {
           status: `liked_u${userId}_e${eventId}` // Encode user and event in status
-        } 
-      };
-      console.log(`📤 CREATE DATA:`, createData);
-      
-      const response = await api(`/api/attendances`, {
-        method: 'POST',
-        body: JSON.stringify(createData),
-        headers: { 
-          'Authorization': `Bearer ${jwt}`,
-          'Content-Type': 'application/json'
-        },
-      });
-      
-      console.log(`✅ LIKED: Successfully created attendance`, response);
-      return { liked: true };
+        };
+        console.log(`📤 LIKE DATA (metadata):`, likeData);
+        
+        const response = await api(`/api/attendances`, {
+          method: 'POST',
+          body: JSON.stringify({ data: likeData }),
+          headers: { 
+            'Authorization': `Bearer ${jwt}`,
+            'Content-Type': 'application/json'
+          },
+        });
+        
+        console.log('✅ LIKE with metadata SUCCESS:', response);
+        return { liked: true };
+        
+      } catch (metadataError) {
+        console.log('❌ Metadata approach failed:', metadataError);
+        
+        // Fallback to simple status only (this worked for RSVP)
+        try {
+          console.log('Fallback to simple liked status only...');
+          const response = await api(`/api/attendances`, {
+            method: 'POST',
+            body: JSON.stringify({ 
+              data: { status: "liked" } 
+            }),
+            headers: { 
+              'Authorization': `Bearer ${jwt}`,
+              'Content-Type': 'application/json'
+            },
+          });
+          
+          console.log('✅ Simple liked status SUCCESS:', response);
+          return { liked: true };
+        } catch (simpleError) {
+          console.log('❌ Even simple liked status failed:', simpleError);
+          throw new Error('Like system not working - check Strapi configuration');
+        }
+      }
     }
   } catch (error) {
     console.error(`❌ LIKE API ERROR for event ${eventId}:`, error);
