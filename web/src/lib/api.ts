@@ -91,18 +91,51 @@ export async function rsvp(eventId: number, status: RSVPStatus, jwt: string) {
       headers: { Authorization: `Bearer ${jwt}` },
     });
   } else {
-    // Create new attendance - use Strapi v5 relation format
-    return api(`/api/attendances`, {
-      method: 'POST',
-      body: JSON.stringify({ 
-        data: { 
-          status, 
-          user: { connect: [userId] },
-          event: { connect: [eventId] }
-        } 
-      }),
-      headers: { Authorization: `Bearer ${jwt}` },
-    });
+    // Create new attendance - try multiple formats
+    try {
+      // Try format 1: connect syntax
+      return await api(`/api/attendances`, {
+        method: 'POST',
+        body: JSON.stringify({ 
+          data: { 
+            status, 
+            user: { connect: [userId] },
+            event: { connect: [eventId] }
+          } 
+        }),
+        headers: { Authorization: `Bearer ${jwt}` },
+      });
+    } catch (error1) {
+      console.log('Connect format failed, trying direct ID format:', error1);
+      try {
+        // Try format 2: direct IDs
+        return await api(`/api/attendances`, {
+          method: 'POST',
+          body: JSON.stringify({ 
+            data: { 
+              status, 
+              user: userId,
+              event: eventId
+            } 
+          }),
+          headers: { Authorization: `Bearer ${jwt}` },
+        });
+      } catch (error2) {
+        console.log('Direct ID format failed, trying set format:', error2);
+        // Try format 3: set syntax
+        return await api(`/api/attendances`, {
+          method: 'POST',
+          body: JSON.stringify({ 
+            data: { 
+              status, 
+              user: { set: [userId] },
+              event: { set: [eventId] }
+            } 
+          }),
+          headers: { Authorization: `Bearer ${jwt}` },
+        });
+      }
+    }
   }
 }
 
