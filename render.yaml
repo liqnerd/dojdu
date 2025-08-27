@@ -3,7 +3,7 @@ services:
     name: dojdu-cms
     env: node
     rootDir: cms
-    buildCommand: npm ci && npm run build
+    buildCommand: npm install && npm run build
     startCommand: npm run start
     plan: free
     autoDeploy: true
