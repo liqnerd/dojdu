@@ -98,18 +98,18 @@ async function fetchMyAttendances(jwt: string): Promise<Attendance[]> {
           
           console.log(`🔍 Trying to fetch event ID: ${attendance?.eventId || 'none'}`);
           
-          // Try the Strapi default REST API first
-          try {
-            const eventResponse = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337'}/api/events/${attendance?.eventId}?populate=*`);
-            if (eventResponse.ok) {
-              const result = await eventResponse.json();
-              console.log('✅ Fetched event via default REST API:', result);
-              eventData = result.data;
-            } else {
-              console.log('❌ Default REST API failed:', eventResponse.status);
+          // Try the Strapi default REST API first (only if we have a valid eventId)
+          if (attendance?.eventId) {
+            try {
+              const eventResponse = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337'}/api/events/${attendance.eventId}?populate=*`);
+              if (eventResponse.ok) {
+                const result = await eventResponse.json();
+                console.log('✅ Fetched event via default REST API:', result);
+                eventData = result.data;
+              }
+            } catch (restError) {
+              console.log('❌ Failed to fetch via REST API:', restError);
             }
-          } catch (restError) {
-            console.log('❌ Failed to fetch via REST API:', restError);
           }
           
           // If that fails, try fetching from the all events endpoint and find by ID
