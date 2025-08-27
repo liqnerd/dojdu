@@ -36,6 +36,8 @@ export default function LikeButton({ eventId, initialLiked = false, className = 
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click
     
+    console.log(`🔥 HEART CLICKED - Event ${eventId}, Current state: ${liked}`);
+    
     const jwt = localStorage.getItem("jwt");
     if (!jwt) {
       alert("Please login to like events");
@@ -44,29 +46,43 @@ export default function LikeButton({ eventId, initialLiked = false, className = 
 
     // Mark that user has interacted (prevent API overrides)
     setHasUserInteracted(true);
+    console.log(`🔒 User interaction locked for event ${eventId}`);
 
     // Trigger animation immediately for instant feedback
     setIsAnimating(true);
     const newLikedState = !liked;
     setLiked(newLikedState);
 
-    console.log(`❤️ User ${newLikedState ? 'liked' : 'unliked'} event ${eventId}`);
+    console.log(`❤️ IMMEDIATE STATE CHANGE: Event ${eventId} → ${newLikedState ? 'LIKED' : 'UNLIKED'}`);
 
     try {
+      console.log(`🚀 CALLING API: likeEvent(${eventId}, jwt)`);
       const result = await likeEvent(eventId, jwt);
-      console.log(`✅ Server confirmed: ${result.liked}`);
+      console.log(`✅ API SUCCESS: Server returned ${JSON.stringify(result)}`);
+      
+      if (result.liked !== newLikedState) {
+        console.log(`⚠️ STATE MISMATCH: Expected ${newLikedState}, got ${result.liked}`);
+      }
+      
       setLiked(result.liked);
+      console.log(`🎯 FINAL STATE SET: Event ${eventId} → ${result.liked ? 'LIKED' : 'UNLIKED'}`);
       
       // Trigger a custom event to refresh profile data
       window.dispatchEvent(new CustomEvent('likesChanged'));
+      console.log(`📡 DISPATCHED likesChanged event for event ${eventId}`);
+      
     } catch (error) {
+      console.error(`❌ API FAILED for event ${eventId}:`, error);
+      console.log(`🔄 REVERTING STATE: Event ${eventId} → ${liked ? 'LIKED' : 'UNLIKED'}`);
       // Revert on error
       setLiked(liked);
-      console.error("Like failed:", error);
     }
 
     // Reset animation after effect completes
-    setTimeout(() => setIsAnimating(false), 600);
+    setTimeout(() => {
+      setIsAnimating(false);
+      console.log(`✨ Animation completed for event ${eventId}`);
+    }, 600);
   };
 
   return (

@@ -208,59 +208,72 @@ export async function fetchUpcomingEventsWith(params: Record<string, string | un
 
 // Like functionality - using attendance system with "liked" status
 export async function likeEvent(eventId: number, jwt: string) {
-  console.log('❤️ Liking event:', eventId);
+  console.log(`🔥 API CALL: likeEvent(${eventId}, jwt)`);
   
   const userId = JSON.parse(atob(jwt.split('.')[1])).id;
+  console.log(`👤 User ID: ${userId}`);
   
   try {
     // Check if already liked by looking for attendance with "liked" status
-    const existingLikes = await api<{ data: { id: number; attributes?: { status?: string } }[] }>(`/api/attendances?filters[status][$contains]=liked_u${userId}_e${eventId}&pagination[limit]=1`, {
+    const checkUrl = `/api/attendances?filters[status][$contains]=liked_u${userId}_e${eventId}&pagination[limit]=1`;
+    console.log(`🔍 CHECKING: ${checkUrl}`);
+    
+    const existingLikes = await api<{ data: { id: number; attributes?: { status?: string } }[] }>(checkUrl, {
       headers: { 'Authorization': `Bearer ${jwt}` },
     });
     
+    console.log(`📊 EXISTING LIKES FOUND: ${existingLikes.data.length}`, existingLikes.data);
+    
     if (existingLikes.data.length > 0) {
-      console.log('💔 Unliking event...');
+      console.log(`💔 UNLIKING: Deleting attendance ${existingLikes.data[0].id}`);
       // Unlike - delete the existing like
       await api(`/api/attendances/${existingLikes.data[0].id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${jwt}` },
       });
+      console.log(`✅ UNLIKED: Successfully deleted attendance ${existingLikes.data[0].id}`);
       return { liked: false };
     } else {
-      console.log('❤️ Creating new like...');
+      console.log(`❤️ LIKING: Creating new attendance with status "liked_u${userId}_e${eventId}"`);
       // Like - create new attendance with "liked" status (reusing RSVP system)
+      const createData = { 
+        data: { 
+          status: `liked_u${userId}_e${eventId}` // Encode user and event in status
+        } 
+      };
+      console.log(`📤 CREATE DATA:`, createData);
+      
       const response = await api(`/api/attendances`, {
         method: 'POST',
-        body: JSON.stringify({ 
-          data: { 
-            status: `liked_u${userId}_e${eventId}` // Encode user and event in status
-          } 
-        }),
+        body: JSON.stringify(createData),
         headers: { 
           'Authorization': `Bearer ${jwt}`,
           'Content-Type': 'application/json'
         },
       });
       
-      console.log('✅ Like created:', response);
+      console.log(`✅ LIKED: Successfully created attendance`, response);
       return { liked: true };
     }
   } catch (error) {
-    console.error('❌ Like failed:', error);
-    throw new Error('Failed to like event');
+    console.error(`❌ LIKE API ERROR for event ${eventId}:`, error);
+    throw new Error(`Failed to like event: ${error}`);
   }
 }
 
 export async function fetchMyLikes(jwt: string): Promise<Like[]> {
-  console.log('🔍 Fetching user likes...');
+  console.log('🔥 FETCHING LIKES API CALL');
   
   try {
     // Fetch attendances with "liked" status (reusing the existing attendance system)
-    const response = await api<{ data: { id: number; attributes?: { status?: string; createdAt?: string } }[] }>(`/api/attendances?filters[status][$contains]=liked&pagination[limit]=50`, {
+    const fetchUrl = `/api/attendances?filters[status][$contains]=liked&pagination[limit]=50`;
+    console.log(`📡 FETCH URL: ${fetchUrl}`);
+    
+    const response = await api<{ data: { id: number; attributes?: { status?: string; createdAt?: string } }[] }>(fetchUrl, {
       headers: { 'Authorization': `Bearer ${jwt}` },
     });
     
-    console.log('✅ Raw likes data:', response);
+    console.log(`📊 RAW LIKES RESPONSE: Found ${response.data.length} items`, response);
     
     // Parse likes similar to attendance parsing
     const likePromises = response.data

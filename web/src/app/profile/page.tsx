@@ -225,23 +225,31 @@ export default function ProfilePage() {
   // Listen for likes changes and refresh liked events
   useEffect(() => {
     const handleLikesChanged = async () => {
-      console.log('🔄 Likes changed, refreshing profile data...');
+      console.log('🔥 PROFILE: likesChanged event received!');
       const jwt = getJwt();
       if (jwt) {
         try {
+          console.log('🔄 PROFILE: Refreshing liked events...');
           const likes = await fetchMyLikes(jwt);
-          console.log('✅ Refreshed liked events after change:', likes.length);
+          console.log(`✅ PROFILE: Got ${likes.length} liked events:`, likes);
           setLikedEvents(Array.isArray(likes) ? likes : []);
           setErrorLikes(null);
+          console.log('🎯 PROFILE: State updated with new likes');
         } catch (error) {
-          console.error('Failed to refresh liked events:', error);
+          console.error('❌ PROFILE: Failed to refresh liked events:', error);
           setErrorLikes('Could not load your liked events');
         }
+      } else {
+        console.log('❌ PROFILE: No JWT token found');
       }
     };
 
+    console.log('👂 PROFILE: Setting up likesChanged event listener');
     window.addEventListener('likesChanged', handleLikesChanged);
-    return () => window.removeEventListener('likesChanged', handleLikesChanged);
+    return () => {
+      console.log('🧹 PROFILE: Cleaning up likesChanged event listener');
+      window.removeEventListener('likesChanged', handleLikesChanged);
+    };
   }, []);
 
   const groups = useMemo(() => {
