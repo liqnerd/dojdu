@@ -11,9 +11,7 @@
   },
   "attributes": {
     "status": {
-      "type": "enumeration",
-      "enum": ["going", "maybe", "not_going"],
-      "default": "going",
+      "type": "string",
       "required": true
     },
     "user": {

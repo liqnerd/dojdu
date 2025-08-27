@@ -73,9 +73,9 @@ export default function LikeButton({ eventId, initialLiked = false, className = 
       
     } catch (error) {
       console.error(`❌ API FAILED for event ${eventId}:`, error);
-      console.log(`🔄 REVERTING STATE: Event ${eventId} → ${liked ? 'LIKED' : 'UNLIKED'}`);
-      // Revert on error
-      setLiked(liked);
+      console.log(`🔄 REVERTING STATE: Event ${eventId} → ${!newLikedState ? 'LIKED' : 'UNLIKED'}`);
+      // Revert to opposite of what we tried to set
+      setLiked(!newLikedState);
     }
 
     // Reset animation after effect completes
