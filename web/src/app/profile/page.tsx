@@ -232,6 +232,9 @@ export default function ProfilePage() {
       const jwt = getJwt();
       if (jwt) {
         try {
+          // Store original length for comparison BEFORE any modifications
+          const originalLikedCount = likedEvents.length;
+          
           // If it's an unlike action, immediately remove from local state
           if (action === 'unliked' && eventId) {
             console.log(`🚀 PROFILE: Immediately removing event ${eventId} from local state`);
@@ -259,16 +262,22 @@ export default function ProfilePage() {
             return true;
           });
           
-          // Only update if we have a meaningful change or if it's a like action
-          if (action === 'liked' || filteredLikes.length !== likedEvents.length) {
-            console.log(`🔄 PROFILE: Updating liked events: ${likedEvents.length} → ${filteredLikes.length}`);
+          // For unlike actions, don't update from server (we already removed locally)
+          // For like actions, always update from server
+          if (action === 'liked') {
+            console.log(`🔄 PROFILE: Updating with fresh server data for LIKE action: ${originalLikedCount} → ${filteredLikes.length}`);
             setLikedEvents(Array.isArray(filteredLikes) ? filteredLikes : []);
+          } else if (action === 'unliked') {
+            console.log(`⏭️ PROFILE: UNLIKE action - keeping local state, ignoring server data with ${filteredLikes.length} items`);
+            // Don't update from server for unlike actions - trust our local removal
           } else {
-            console.log(`⏭️ PROFILE: No change needed, keeping current ${likedEvents.length} liked events`);
+            // Fallback for other actions
+            console.log(`🔄 PROFILE: Updating for other action: ${originalLikedCount} → ${filteredLikes.length}`);
+            setLikedEvents(Array.isArray(filteredLikes) ? filteredLikes : []);
           }
           
           setErrorLikes(null);
-          console.log(`🎯 PROFILE: Final state has ${likedEvents.length} liked events`);
+          console.log(`🎯 PROFILE: Final operation complete`);
         } catch (error) {
           console.error('❌ PROFILE: Failed to refresh liked events:', error);
           setErrorLikes('Could not load your liked events');
