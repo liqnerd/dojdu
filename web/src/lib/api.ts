@@ -73,55 +73,30 @@ export async function fetchUpcomingEvents(): Promise<EventItem[]> {
 }
 
 export async function rsvp(eventId: number, status: RSVPStatus, jwt: string) {
-  console.log('🚀 RSVP v3: Using simplified approach without filter queries');
-  const userId = JSON.parse(atob(jwt.split('.')[1])).id;
+  console.log('🚀 RSVP v4: Direct POST only - no filter queries!');
+  console.log('Event ID:', eventId, 'Status:', status);
   
-  // Simplified approach: just create/update without checking existing
-  // Let the backend handle the unique constraint
-  try {
-    // Try format 1: direct IDs (most common)
-    return await api(`/api/attendances`, {
-      method: 'POST',
-      body: JSON.stringify({ 
-        data: { 
-          status, 
-          user: userId,
-          event: eventId
-        } 
-      }),
-      headers: { Authorization: `Bearer ${jwt}` },
-    });
-  } catch (error1) {
-    console.log('Direct ID format failed, trying connect format:', error1);
-    try {
-      // Try format 2: connect syntax
-      return await api(`/api/attendances`, {
-        method: 'POST',
-        body: JSON.stringify({ 
-          data: { 
-            status, 
-            user: { connect: [userId] },
-            event: { connect: [eventId] }
-          } 
-        }),
-        headers: { Authorization: `Bearer ${jwt}` },
-      });
-    } catch (error2) {
-      console.log('Connect format failed, trying set format:', error2);
-      // Try format 3: set syntax
-      return await api(`/api/attendances`, {
-        method: 'POST',
-        body: JSON.stringify({ 
-          data: { 
-            status, 
-            user: { set: [userId] },
-            event: { set: [eventId] }
-          } 
-        }),
-        headers: { Authorization: `Bearer ${jwt}` },
-      });
-    }
-  }
+  const userId = JSON.parse(atob(jwt.split('.')[1])).id;
+  console.log('User ID:', userId);
+  
+  // Direct POST - no checking for existing records
+  const response = await api(`/api/attendances`, {
+    method: 'POST',
+    body: JSON.stringify({ 
+      data: { 
+        status, 
+        user: userId,
+        event: eventId
+      } 
+    }),
+    headers: { 
+      'Authorization': `Bearer ${jwt}`,
+      'Content-Type': 'application/json'
+    },
+  });
+  
+  console.log('RSVP response:', response);
+  return response;
 }
 
 export async function fetchEventBySlug(slug: string): Promise<EventItem> {
