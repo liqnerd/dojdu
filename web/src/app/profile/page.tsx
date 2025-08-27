@@ -11,7 +11,6 @@ type Attendance = { id: number; status: RSVPStatus; event: EventItem };
 
 async function fetchMyAttendances(jwt: string): Promise<Attendance[]> {
   console.log('🔍 Fetching user attendances...');
-  const userId = JSON.parse(atob(jwt.split('.')[1])).id;
   
   try {
     // Fetch all attendances since we can't filter by user relation
@@ -47,8 +46,8 @@ async function fetchMyAttendances(jwt: string): Promise<Attendance[]> {
             description: 'RSVP saved successfully',
             startDate: typedItem.attributes.createdAt,
             endDate: typedItem.attributes.createdAt,
-            venue: { name: 'Various Venues', city: 'Prague' },
-            category: { name: 'Various', slug: 'various' },
+            venue: { id: 1, name: 'Various Venues', city: 'Prague' },
+            category: { id: 1, name: 'Various', slug: 'various' },
             attendanceCounts: { going: 0, maybe: 0, not_going: 0 }
           }
         };
