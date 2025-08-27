@@ -7,7 +7,6 @@ export default {
       config: {
         policies: [],
         middlewares: [],
-        auth: true,
       },
     },
     {
@@ -17,7 +16,6 @@ export default {
       config: {
         policies: [],
         middlewares: [],
-        auth: true,
       },
     },
   ],
