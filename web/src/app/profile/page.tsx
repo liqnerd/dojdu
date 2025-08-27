@@ -23,35 +23,52 @@ async function fetchMyAttendances(jwt: string): Promise<Attendance[]> {
     // Filter and parse the data to find user's RSVPs
     const userAttendances = response.data
       .map((item: unknown) => {
-        const typedItem = item as { 
-          id: number; 
-          attributes: { 
-            status: string;
-            createdAt: string;
-            updatedAt: string;
-          } 
-        };
+        console.log('🔍 Raw attendance item:', item);
         
-        console.log('Processing attendance:', typedItem);
+        // Handle different possible data structures
+        let attendanceData: any;
+        let attendanceId: number;
         
-        // Check if this attendance belongs to current user
-        // For now, we'll show recent attendances as a workaround
+        if (item && typeof item === 'object') {
+          // Check if it's Strapi v4 format (with attributes)
+          if ('attributes' in item) {
+            attendanceData = (item as any).attributes;
+            attendanceId = (item as any).id;
+          } else {
+            // Check if it's Strapi v5 format (direct properties)
+            attendanceData = item;
+            attendanceId = (item as any).id || (item as any).documentId;
+          }
+        }
+        
+        console.log('🔍 Processed attendance data:', attendanceData);
+        console.log('🔍 Attendance ID:', attendanceId);
+        
+        if (!attendanceData || !attendanceData.status) {
+          console.log('❌ Invalid attendance data, skipping');
+          return null;
+        }
+        
+        // Extract base status (remove encoded user/event info if present)
+        const baseStatus = attendanceData.status.split('_')[0] as RSVPStatus;
+        
         return {
-          id: typedItem.id,
-          status: typedItem.attributes.status.split('_')[0] as RSVPStatus, // Extract base status
+          id: attendanceId,
+          status: baseStatus,
           event: {
             id: 999, // Placeholder
-            title: `Event (RSVP ID: ${typedItem.id})`,
+            title: `Event (RSVP ID: ${attendanceId})`,
             slug: 'placeholder',
             description: 'RSVP saved successfully',
-            startDate: typedItem.attributes.createdAt,
-            endDate: typedItem.attributes.createdAt,
+            startDate: attendanceData.createdAt || new Date().toISOString(),
+            endDate: attendanceData.createdAt || new Date().toISOString(),
             venue: { id: 1, name: 'Various Venues', city: 'Prague' },
             category: { id: 1, name: 'Various', slug: 'various' },
             attendanceCounts: { going: 0, maybe: 0, not_going: 0 }
           }
         };
       })
+      .filter(Boolean) // Remove null entries
       .slice(0, 10); // Show last 10 RSVPs
     
     console.log('✅ Processed attendances:', userAttendances);
