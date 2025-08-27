@@ -21,7 +21,7 @@ export default function RegisterPage() {
     try {
       const res = await register(username, email, password);
       window.localStorage.setItem('jwt', res.jwt);
-      router.push('/');
+      window.location.href = '/';
     } catch {
       setError('Registration failed');
     } finally {

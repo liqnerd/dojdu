@@ -8,7 +8,19 @@ export function UserMenu() {
   const [user, setUser] = useState<{ username: string; email: string } | null>(null);
 
   useEffect(() => {
-    fetchCurrentUser().then(setUser).catch(() => setUser(null));
+    const loadUser = () => {
+      fetchCurrentUser().then(setUser).catch(() => setUser(null));
+    };
+    
+    loadUser();
+    
+    // Listen for storage changes (when JWT is updated)
+    const handleStorageChange = () => {
+      loadUser();
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   const logout = () => {

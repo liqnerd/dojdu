@@ -20,7 +20,7 @@ export default function LoginPage() {
     try {
       const res = await login(identifier, password);
       window.localStorage.setItem('jwt', res.jwt);
-      router.push('/');
+      window.location.href = '/';
     } catch {
       setError('Invalid credentials');
     } finally {
