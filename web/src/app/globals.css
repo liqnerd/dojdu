@@ -143,3 +143,21 @@
 .scrollbar-hidden::-webkit-scrollbar-thumb {
   display: none !important;
 }
+
+/* Alternative scrollbar hiding class */
+.scrollbar-hide {
+  -ms-overflow-style: none !important;  /* Internet Explorer 10+ */
+  scrollbar-width: none !important;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar { 
+  display: none !important;  /* Safari and Chrome */
+}
+
+/* Line clamp utilities */
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}

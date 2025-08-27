@@ -2,8 +2,10 @@
 import useSWR from 'swr';
 import Section from '@/components/Section';
 import ChaoticHorizontalScroll from '@/components/ChaoticHorizontalScroll';
+import HorizontalScroll from '@/components/HorizontalScroll';
 import EventCard from '@/components/EventCard';
 import ChaoticEventCard from '@/components/ChaoticEventCard';
+import CategoryCard from '@/components/CategoryCard';
 import { EventItem } from '@/lib/api';
 
 const STRAPI = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337';
@@ -84,38 +86,49 @@ export function ClientPopular() {
   );
 }
 
-// Categories sections (Music first), 3 events each + Show more
-function CategoryBlock({ name, slug }: { name: string; slug: string }) {
-  const { data, error } = useSWR<EventItem[]>(`${STRAPI}/api/events/all?category=${encodeURIComponent(slug)}`, fetcher);
-  const items = (data || []).slice(0, 3);
+// Category block with events for horizontal scroll
+function CategoryBlockWithEvents({ category }: { category: { id: number; name: string; slug: string } }) {
+  const { data: events, error } = useSWR<EventItem[]>(
+    `${STRAPI}/api/events/all?category=${encodeURIComponent(category.slug || category.name.toLowerCase())}`,
+    fetcher
+  );
+  
   return (
-    <Section title={name} subtitle={undefined} cta={<a className="text-sm underline" href={`/all?category=${encodeURIComponent(slug)}`}>Show more</a>}>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {error ? (
-          <p className="text-muted-foreground">Unable to load events</p>
-        ) : (
-          items.map(e => <EventCard key={e.id} event={e} />)
-        )}
-      </div>
-    </Section>
+    <CategoryCard
+      name={category.name}
+      slug={category.slug || category.name.toLowerCase()}
+      events={events || []}
+      isLoading={!events && !error}
+    />
   );
 }
 
 export function ClientByCategories() {
-  const { data, error } = useSWR<{ id: number; name: string; slug: string }[]>(`${STRAPI}/api/categories`, fetcher);
-  if (error || !data) return null;
+  const { data: categories, error } = useSWR<{ id: number; name: string; slug: string }[]>(`${STRAPI}/api/categories`, fetcher);
+  
+  if (error || !categories) return null;
+  
+  // Put music first, then other categories
   const musicFirst = [
-    ...data.filter(c => (c.slug || c.name.toLowerCase()) === 'music' || c.name.toLowerCase() === 'music'),
-    ...data.filter(c => (c.slug || c.name.toLowerCase()) !== 'music' && c.name.toLowerCase() !== 'music'),
+    ...categories.filter(c => (c.slug || c.name.toLowerCase()) === 'music' || c.name.toLowerCase() === 'music'),
+    ...categories.filter(c => (c.slug || c.name.toLowerCase()) !== 'music' && c.name.toLowerCase() !== 'music'),
   ];
-  // limit to a reasonable number of sections
-  const take = musicFirst.slice(0, 6);
+  
+  // Show all categories in horizontal scroll
+  const displayCategories = musicFirst.slice(0, 8); // Show up to 8 categories
+
   return (
-    <div className="space-y-8">
-      {take.map(c => (
-        <CategoryBlock key={c.id} name={c.name} slug={c.slug || c.name.toLowerCase()} />
-      ))}
-    </div>
+    <Section 
+      title="Browse by Category" 
+      subtitle="Discover events that match your interests"
+      cta={<a className="text-sm underline" href="/all">See all events</a>}
+    >
+      <HorizontalScroll>
+        {displayCategories.map(category => (
+          <CategoryBlockWithEvents key={category.id} category={category} />
+        ))}
+      </HorizontalScroll>
+    </Section>
   );
 }
 
