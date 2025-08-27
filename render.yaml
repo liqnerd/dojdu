@@ -25,8 +25,4 @@ services:
         sync: false
       - key: TRANSFER_TOKEN_SALT
         sync: false
-    disk:
-      name: strapi-data
-      mountPath: /opt/render/project/src/.tmp
-      sizeGB: 1
 
