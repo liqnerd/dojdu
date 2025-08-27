@@ -185,36 +185,63 @@ export default function ProfilePage() {
   const [errorLikes, setErrorLikes] = useState<string | null>(null);
   const getInitials = (name?: string) => (name ? name.split(/\s+/).map(p => p[0]).slice(0,2).join('').toUpperCase() : 'U');
 
+  const loadUserData = async () => {
+    const u = await fetchCurrentUser();
+    setUser(u);
+    const jwt = getJwt();
+    if (jwt) {
+      try {
+        const atts = await fetchMyAttendances(jwt);
+        setData(Array.isArray(atts) ? atts : []);
+      } catch (error) {
+        console.error('Failed to load RSVPs:', error);
+        setErrorRsvp('Could not load your RSVPs: ' + (error as Error).message);
+        setData([]); // Ensure data is always an array
+      }
+      try {
+        const mine = await fetchMyEvents(jwt);
+        setMyEvents(Array.isArray(mine) ? mine : []);
+      } catch {
+        setErrorMine('Could not load your events');
+        setMyEvents([]); // Ensure myEvents is always an array
+      }
+      try {
+        const likes = await fetchMyLikes(jwt);
+        console.log('🔄 Refreshed liked events:', likes.length);
+        setLikedEvents(Array.isArray(likes) ? likes : []);
+        setErrorLikes(null); // Clear any previous errors
+      } catch (error) {
+        console.error('Failed to load liked events:', error);
+        setErrorLikes('Could not load your liked events');
+        setLikedEvents([]); // Ensure likedEvents is always an array
+      }
+    }
+  };
+
   useEffect(() => {
-    (async () => {
-      const u = await fetchCurrentUser();
-      setUser(u);
+    loadUserData();
+  }, []);
+
+  // Listen for likes changes and refresh liked events
+  useEffect(() => {
+    const handleLikesChanged = async () => {
+      console.log('🔄 Likes changed, refreshing profile data...');
       const jwt = getJwt();
       if (jwt) {
         try {
-          const atts = await fetchMyAttendances(jwt);
-          setData(Array.isArray(atts) ? atts : []);
-        } catch (error) {
-          console.error('Failed to load RSVPs:', error);
-          setErrorRsvp('Could not load your RSVPs: ' + (error as Error).message);
-          setData([]); // Ensure data is always an array
-        }
-        try {
-          const mine = await fetchMyEvents(jwt);
-          setMyEvents(Array.isArray(mine) ? mine : []);
-        } catch {
-          setErrorMine('Could not load your events');
-          setMyEvents([]); // Ensure myEvents is always an array
-        }
-        try {
           const likes = await fetchMyLikes(jwt);
+          console.log('✅ Refreshed liked events after change:', likes.length);
           setLikedEvents(Array.isArray(likes) ? likes : []);
-        } catch {
+          setErrorLikes(null);
+        } catch (error) {
+          console.error('Failed to refresh liked events:', error);
           setErrorLikes('Could not load your liked events');
-          setLikedEvents([]); // Ensure likedEvents is always an array
         }
       }
-    })();
+    };
+
+    window.addEventListener('likesChanged', handleLikesChanged);
+    return () => window.removeEventListener('likesChanged', handleLikesChanged);
   }, []);
 
   const groups = useMemo(() => {

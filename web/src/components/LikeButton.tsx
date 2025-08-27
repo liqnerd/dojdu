@@ -11,14 +11,18 @@ interface LikeButtonProps {
 export default function LikeButton({ eventId, initialLiked = false, className = "" }: LikeButtonProps) {
   const [liked, setLiked] = useState(initialLiked);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
 
-  // Check if event is already liked on component mount
+  // Check if event is already liked on component mount (only if user hasn't interacted)
   useEffect(() => {
+    if (hasUserInteracted) return; // Don't override user's action
+    
     const checkLikedStatus = async () => {
       const jwt = localStorage.getItem("jwt");
       if (jwt) {
         try {
           const isLiked = await isEventLiked(eventId, jwt);
+          console.log(`❤️ Initial check for event ${eventId}: ${isLiked}`);
           setLiked(isLiked);
         } catch (error) {
           console.log('Could not check liked status:', error);
@@ -27,7 +31,7 @@ export default function LikeButton({ eventId, initialLiked = false, className = 
     };
     
     checkLikedStatus();
-  }, [eventId]);
+  }, [eventId, hasUserInteracted]);
 
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click
@@ -38,13 +42,23 @@ export default function LikeButton({ eventId, initialLiked = false, className = 
       return;
     }
 
+    // Mark that user has interacted (prevent API overrides)
+    setHasUserInteracted(true);
+
     // Trigger animation immediately for instant feedback
     setIsAnimating(true);
-    setLiked(!liked);
+    const newLikedState = !liked;
+    setLiked(newLikedState);
+
+    console.log(`❤️ User ${newLikedState ? 'liked' : 'unliked'} event ${eventId}`);
 
     try {
       const result = await likeEvent(eventId, jwt);
+      console.log(`✅ Server confirmed: ${result.liked}`);
       setLiked(result.liked);
+      
+      // Trigger a custom event to refresh profile data
+      window.dispatchEvent(new CustomEvent('likesChanged'));
     } catch (error) {
       // Revert on error
       setLiked(liked);
