@@ -14,15 +14,20 @@ services:
         value: 0.0.0.0
       - key: PORT
         value: 1337
-      # Generate strong secrets in the Render dashboard after creating the service
+      # Database configuration for SQLite
+      - key: DATABASE_CLIENT
+        value: sqlite
+      - key: DATABASE_FILENAME
+        value: .tmp/data.db
+      # Default secrets (you should change these in production)
       - key: APP_KEYS
-        sync: false
+        value: "defaultKey1,defaultKey2,defaultKey3,defaultKey4"
       - key: API_TOKEN_SALT
-        sync: false
+        value: "defaultApiTokenSalt"
       - key: ADMIN_JWT_SECRET
-        sync: false
+        value: "defaultAdminJwtSecret"
       - key: JWT_SECRET
-        sync: false
+        value: "defaultJwtSecret"
       - key: TRANSFER_TOKEN_SALT
-        sync: false
+        value: "defaultTransferTokenSalt"
 
