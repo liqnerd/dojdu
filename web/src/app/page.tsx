@@ -8,6 +8,13 @@ export default function HomePage() {
   
   return (
     <div className="space-y-10">
+      {/* Debug info - remove this later */}
+      <div className="bg-yellow-100 p-4 rounded border">
+        <p><strong>Debug Info:</strong></p>
+        <p>STRAPI URL: {process.env.NEXT_PUBLIC_STRAPI_URL || 'NOT SET'}</p>
+        <p>NODE_ENV: {process.env.NODE_ENV || 'NOT SET'}</p>
+      </div>
+      
       <section className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-fuchsia-500/10 via-sky-400/10 to-pink-500/10">
         <div className="absolute -top-24 -left-24 h-64 w-64 rounded-full bg-primary/20 blur-3xl" />
         <div className="absolute -bottom-24 -right-24 h-64 w-64 rounded-full bg-secondary/30 blur-3xl" />
