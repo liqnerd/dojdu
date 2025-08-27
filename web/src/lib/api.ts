@@ -73,6 +73,7 @@ export async function fetchUpcomingEvents(): Promise<EventItem[]> {
 }
 
 export async function rsvp(eventId: number, status: RSVPStatus, jwt: string) {
+  console.log('🚀 RSVP v3: Using simplified approach without filter queries');
   const userId = JSON.parse(atob(jwt.split('.')[1])).id;
   
   // Simplified approach: just create/update without checking existing
