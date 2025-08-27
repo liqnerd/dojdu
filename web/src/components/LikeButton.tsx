@@ -1,6 +1,6 @@
 "use client";
-import { useState } from "react";
-import { likeEvent } from "@/lib/api";
+import { useState, useEffect } from "react";
+import { likeEvent, isEventLiked } from "@/lib/api";
 
 interface LikeButtonProps {
   eventId: number;
@@ -11,6 +11,23 @@ interface LikeButtonProps {
 export default function LikeButton({ eventId, initialLiked = false, className = "" }: LikeButtonProps) {
   const [liked, setLiked] = useState(initialLiked);
   const [isAnimating, setIsAnimating] = useState(false);
+
+  // Check if event is already liked on component mount
+  useEffect(() => {
+    const checkLikedStatus = async () => {
+      const jwt = localStorage.getItem("jwt");
+      if (jwt) {
+        try {
+          const isLiked = await isEventLiked(eventId, jwt);
+          setLiked(isLiked);
+        } catch (error) {
+          console.log('Could not check liked status:', error);
+        }
+      }
+    };
+    
+    checkLikedStatus();
+  }, [eventId]);
 
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click

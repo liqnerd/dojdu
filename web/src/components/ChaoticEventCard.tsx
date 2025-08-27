@@ -62,12 +62,6 @@ export default function ChaoticEventCard({ event, showActions }: Props) {
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
           
-          {/* Like Button - Top Right */}
-          <LikeButton 
-            eventId={event.id} 
-            className="absolute top-2 right-2 z-10" 
-          />
-          
           <div className="absolute bottom-2 left-2 right-2">
             <div className="text-white text-sm">
               <div className="font-semibold line-clamp-1">{event.title}</div>
@@ -87,9 +81,7 @@ export default function ChaoticEventCard({ event, showActions }: Props) {
               )}
               {event.category && <Badge variant="secondary">{event.category.name}</Badge>}
             </div>
-            <div className="text-sm text-primary/70 group-hover:text-primary transition-colors">
-              Click to view details
-            </div>
+            <LikeButton eventId={event.id} />
           </div>
           {showActions && (
             <div className="flex gap-1 mt-2" onClick={(e) => e.stopPropagation()}>

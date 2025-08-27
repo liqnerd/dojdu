@@ -206,34 +206,34 @@ export async function fetchUpcomingEventsWith(params: Record<string, string | un
   return api<EventItem[]>(`/api/events/upcoming${qs}`);
 }
 
-// Like functionality
+// Like functionality - using attendance system with "liked" status
 export async function likeEvent(eventId: number, jwt: string) {
   console.log('❤️ Liking event:', eventId);
   
   const userId = JSON.parse(atob(jwt.split('.')[1])).id;
   
   try {
-    // Check if already liked
-    const existingLikes = await api<{ data: { id: number; attributes?: unknown }[] }>(`/api/likes?filters[user][$eq]=${userId}&filters[event][$eq]=${eventId}`, {
+    // Check if already liked by looking for attendance with "liked" status
+    const existingLikes = await api<{ data: { id: number; attributes?: { status?: string } }[] }>(`/api/attendances?filters[status][$contains]=liked_u${userId}_e${eventId}&pagination[limit]=1`, {
       headers: { 'Authorization': `Bearer ${jwt}` },
     });
     
     if (existingLikes.data.length > 0) {
       console.log('💔 Unliking event...');
       // Unlike - delete the existing like
-      await api(`/api/likes/${existingLikes.data[0].id}`, {
+      await api(`/api/attendances/${existingLikes.data[0].id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${jwt}` },
       });
       return { liked: false };
     } else {
       console.log('❤️ Creating new like...');
-      // Like - create new like with encoded data (similar to RSVP approach)
-      const response = await api(`/api/likes`, {
+      // Like - create new attendance with "liked" status (reusing RSVP system)
+      const response = await api(`/api/attendances`, {
         method: 'POST',
         body: JSON.stringify({ 
           data: { 
-            status: `liked_u${userId}_e${eventId}` // Encode user and event in status for consistency
+            status: `liked_u${userId}_e${eventId}` // Encode user and event in status
           } 
         }),
         headers: { 
@@ -255,7 +255,8 @@ export async function fetchMyLikes(jwt: string): Promise<Like[]> {
   console.log('🔍 Fetching user likes...');
   
   try {
-    const response = await api<{ data: { id: number; attributes?: { status?: string; createdAt?: string } }[] }>(`/api/likes?pagination[limit]=50`, {
+    // Fetch attendances with "liked" status (reusing the existing attendance system)
+    const response = await api<{ data: { id: number; attributes?: { status?: string; createdAt?: string } }[] }>(`/api/attendances?filters[status][$contains]=liked&pagination[limit]=50`, {
       headers: { 'Authorization': `Bearer ${jwt}` },
     });
     
@@ -268,7 +269,7 @@ export async function fetchMyLikes(jwt: string): Promise<Like[]> {
         const likeId = item.id || index + 1;
         
         const status = 'status' in likeData ? likeData.status : undefined;
-        if (!status) {
+        if (!status || !status.startsWith('liked')) {
           return null;
         }
         
@@ -344,6 +345,19 @@ export async function fetchMyLikes(jwt: string): Promise<Like[]> {
   } catch (error) {
     console.error('❌ Failed to fetch likes:', error);
     throw error;
+  }
+}
+
+// Check if event is liked by current user
+export async function isEventLiked(eventId: number, jwt: string): Promise<boolean> {
+  try {
+    const userId = JSON.parse(atob(jwt.split('.')[1])).id;
+    const response = await api<{ data: { id: number }[] }>(`/api/attendances?filters[status][$contains]=liked_u${userId}_e${eventId}&pagination[limit]=1`, {
+      headers: { 'Authorization': `Bearer ${jwt}` },
+    });
+    return response.data.length > 0;
+  } catch {
+    return false;
   }
 }
 
