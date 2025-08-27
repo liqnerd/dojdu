@@ -5,7 +5,6 @@ export default {
       path: '/attendances/rsvp',
       handler: 'attendance.rsvp',
       config: {
-        auth: true,
         policies: [],
         middlewares: [],
       },
@@ -15,7 +14,6 @@ export default {
       path: '/attendances/me',
       handler: 'attendance.me',
       config: {
-        auth: true,
         policies: [],
         middlewares: [],
       },
