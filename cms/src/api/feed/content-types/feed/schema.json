@@ -1,0 +1,21 @@
+{
+  "kind": "collectionType",
+  "collectionName": "feeds",
+  "info": {
+    "singularName": "feed",
+    "pluralName": "feeds",
+    "displayName": "Feed"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "name": { "type": "string", "required": true },
+    "url": { "type": "string", "required": true },
+    "city": { "type": "string" },
+    "country": { "type": "string" },
+    "enabled": { "type": "boolean", "default": true },
+    "lastSyncedAt": { "type": "datetime" }
+  }
+}
+

@@ -1,0 +1,36 @@
+export default [
+  'strapi::logger',
+  'strapi::errors',
+  'strapi::security',
+  {
+    name: 'strapi::cors',
+    config: {
+      origin: [
+        'http://localhost:3000',
+        'http://localhost:3001',
+        'http://127.0.0.1:3000',
+        'http://127.0.0.1:3001',
+        'https://localhost:3000',
+        'https://*.vercel.app',
+      ],
+      headers: [
+        'Content-Type',
+        'Authorization',
+        'Origin',
+        'Accept',
+        'Accept-Language',
+        'Access-Control-Request-Method',
+        'Access-Control-Request-Headers',
+      ],
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      keepHeaderOnError: true,
+      credentials: true,
+    },
+  },
+  'strapi::poweredBy',
+  'strapi::query',
+  'strapi::body',
+  'strapi::session',
+  'strapi::favicon',
+  'strapi::public',
+];
