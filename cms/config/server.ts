@@ -5,6 +5,6 @@ export default ({ env }) => ({
     keys: env.array('APP_KEYS'),
   },
   cron: {
-    enabled: true,
+    enabled: false, // Disabled temporarily for deployment stability
   },
 });

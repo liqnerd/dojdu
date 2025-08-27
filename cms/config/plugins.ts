@@ -6,13 +6,14 @@ export default () => ({
       },
     },
   },
-  cron: {
-    jobs: [
-      {
-        key: 'sync-feeds-hourly',
-        schedule: '0 * * * *',
-        task: ({ strapi }) => strapi.service('api::feed.feed').syncFeeds(),
-      },
-    ],
-  },
+  // Disable cron jobs temporarily to prevent deployment issues
+  // cron: {
+  //   jobs: [
+  //     {
+  //       key: 'sync-feeds-hourly',
+  //       schedule: '0 * * * *',
+  //       task: ({ strapi }) => strapi.service('api::feed.feed').syncFeeds(),
+  //     },
+  //   ],
+  // },
 });
