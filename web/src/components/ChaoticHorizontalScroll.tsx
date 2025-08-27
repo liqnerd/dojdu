@@ -1,8 +1,8 @@
 "use client";
-import { ReactNode, useRef, useState } from "react";
+import React, { ReactNode, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 
-export default function HorizontalScroll({ children }: { children: ReactNode }) {
+export default function ChaoticHorizontalScroll({ children }: { children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
@@ -65,8 +65,19 @@ export default function HorizontalScroll({ children }: { children: ReactNode }) 
         onTouchEnd={handleTouchEnd}
         style={{ userSelect: 'none' }}
       >
-        <div className="flex gap-3 pr-8 pt-1 pb-8">
-          {children}
+        <div className="flex gap-0 pr-8 pt-1 pb-8">
+          {React.Children.map(children, (child, index) => (
+            <div 
+              key={index} 
+              className="flex-shrink-0"
+              style={{ 
+                marginLeft: index > 0 ? '-20px' : '0px',
+                zIndex: React.Children.count(children) - index
+              }}
+            >
+              {child}
+            </div>
+          ))}
         </div>
       </div>
       <div className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-background to-transparent" />
@@ -96,5 +107,3 @@ export default function HorizontalScroll({ children }: { children: ReactNode }) 
     </div>
   );
 }
-
-

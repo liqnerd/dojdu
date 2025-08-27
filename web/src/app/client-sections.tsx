@@ -2,7 +2,9 @@
 import useSWR from 'swr';
 import Section from '@/components/Section';
 import HorizontalScroll from '@/components/HorizontalScroll';
+import ChaoticHorizontalScroll from '@/components/ChaoticHorizontalScroll';
 import EventCard from '@/components/EventCard';
+import ChaoticEventCard from '@/components/ChaoticEventCard';
 import { EventItem } from '@/lib/api';
 
 const STRAPI = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337';
@@ -38,17 +40,17 @@ export function ClientSponsored() {
   const { data, error } = useSWR<EventItem[]>(`${STRAPI}/api/events/upcoming?size=12`, fetcher);
   return (
     <Section title="Sponsored" subtitle="Partners & promoters">
-      <HorizontalScroll>
+      <ChaoticHorizontalScroll>
         {error ? (
           <p className="text-muted-foreground">Unable to load events</p>
         ) : (
           (data || []).slice(0, 10).map(e => (
             <div key={e.id} className="min-w-[280px] max-w-[280px]">
-              <EventCard event={e} />
+              <ChaoticEventCard event={e} />
             </div>
           ))
         )}
-      </HorizontalScroll>
+      </ChaoticHorizontalScroll>
     </Section>
   );
 }

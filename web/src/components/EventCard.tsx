@@ -5,7 +5,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RSVPStatus, EventItem, getStrapiImageUrl, rsvp } from "@/lib/api";
-import { useMemo } from "react";
 
 type Props = {
   event: EventItem;
@@ -13,14 +12,6 @@ type Props = {
 };
 
 export default function EventCard({ event, showActions }: Props) {
-  // Generate consistent random tilt for this specific event
-  const randomTilt = useMemo(() => {
-    // Use event ID as seed for consistent randomness
-    const seed = event.id * 7919; // Prime number for better distribution
-    const random = Math.sin(seed) * 10000;
-    const tilt = (random - Math.floor(random)) * 12 - 6; // Random between -6 and +6 degrees
-    return tilt;
-  }, [event.id]);
   const onRSVP = async (status: RSVPStatus) => {
     const token = localStorage.getItem("jwt");
     if (!token) return alert("Please login first.");
@@ -36,15 +27,8 @@ export default function EventCard({ event, showActions }: Props) {
   const img = event.image?.url ? getStrapiImageUrl(event.image.url) : undefined;
 
   return (
-    <div 
-      className="group transition-all duration-300 hover:scale-105 hover:z-10 relative"
-      style={{ 
-        transform: `rotate(${randomTilt}deg)`,
-        transformOrigin: 'center center'
-      }}
-    >
-      <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border-2">
-        <div className="relative h-48 w-full">
+    <Card className="group overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
+      <div className="relative h-48 w-full">
         {img ? (
           <Image src={img} alt={event.title} fill className="object-cover" />
         ) : (
@@ -81,7 +65,6 @@ export default function EventCard({ event, showActions }: Props) {
         )}
       </CardContent>
     </Card>
-    </div>
   );
 }
 
