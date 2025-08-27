@@ -11,17 +11,18 @@ type Attendance = { id: number; status: RSVPStatus; event: EventItem };
 
 async function fetchMyAttendances(jwt: string): Promise<Attendance[]> {
   console.log('🔍 Fetching user attendances...');
+  const userId = JSON.parse(atob(jwt.split('.')[1])).id;
   
   try {
-    // Fetch all attendances since we can't filter by user relation
+    // Fetch all attendances
     const response = await api<{data: unknown[]}>(`/api/attendances?pagination[limit]=100&sort[0]=createdAt:desc`, {
       headers: { Authorization: `Bearer ${jwt}` },
     });
     
     console.log('✅ Raw attendances data:', response);
     
-    // Filter and parse the data to find user's RSVPs
-    const userAttendances = response.data
+    // Parse attendances and extract event IDs
+    const attendancePromises = response.data
       .map((item: unknown) => {
         console.log('🔍 Raw attendance item:', item);
         
@@ -43,38 +44,95 @@ async function fetchMyAttendances(jwt: string): Promise<Attendance[]> {
           }
         }
         
-        console.log('🔍 Processed attendance data:', attendanceData);
-        console.log('🔍 Attendance ID:', attendanceId);
-        
         if (!attendanceData || !attendanceData.status) {
-          console.log('❌ Invalid attendance data, skipping');
           return null;
         }
         
-        // Extract base status (remove encoded user/event info if present)
-        const baseStatus = attendanceData.status.split('_')[0] as RSVPStatus;
+        // Extract base status and event ID from encoded status
+        const statusParts = attendanceData.status.split('_');
+        const baseStatus = statusParts[0] as RSVPStatus;
+        
+        // Try to extract event ID from status (format: "going_u1_e59")
+        let eventId: number | null = null;
+        for (const part of statusParts) {
+          if (part.startsWith('e') && part.length > 1) {
+            const id = parseInt(part.substring(1));
+            if (!isNaN(id)) {
+              eventId = id;
+              break;
+            }
+          }
+        }
+        
+        console.log('🔍 Extracted:', { baseStatus, eventId, attendanceId });
         
         return {
-          id: attendanceId,
-          status: baseStatus,
-          event: {
-            id: 999, // Placeholder
-            title: `Event (RSVP ID: ${attendanceId})`,
-            slug: 'placeholder',
-            description: 'RSVP saved successfully',
-            startDate: attendanceData.createdAt || new Date().toISOString(),
-            endDate: attendanceData.createdAt || new Date().toISOString(),
-            venue: { id: 1, name: 'Various Venues', city: 'Prague' },
-            category: { id: 1, name: 'Various', slug: 'various' },
-            attendanceCounts: { going: 0, maybe: 0, not_going: 0 }
-          }
-        } as Attendance;
+          attendanceId,
+          baseStatus,
+          eventId,
+          createdAt: attendanceData.createdAt || new Date().toISOString()
+        };
       })
-      .filter((item): item is Attendance => item !== null) // Remove null entries with proper type guard
-      .slice(0, 10); // Show last 10 RSVPs
+      .filter(Boolean) // Remove null entries
+      .slice(0, 10); // Limit to 10 most recent
     
-    console.log('✅ Processed attendances:', userAttendances);
-    return userAttendances;
+    // Fetch actual event data for each attendance
+    const attendancesWithEvents = await Promise.all(
+      attendancePromises.map(async (attendance) => {
+        if (!attendance?.eventId) {
+          // If no event ID found, create a basic placeholder
+          return {
+            id: attendance?.attendanceId || 0,
+            status: attendance?.baseStatus || 'going',
+            event: {
+              id: 0,
+              title: `RSVP #${attendance?.attendanceId}`,
+              slug: 'unknown',
+              description: 'Event details not available',
+              startDate: attendance?.createdAt || new Date().toISOString(),
+              endDate: attendance?.createdAt || new Date().toISOString(),
+              venue: { id: 1, name: 'Unknown Venue', city: 'Unknown' },
+              category: { id: 1, name: 'Unknown', slug: 'unknown' },
+              attendanceCounts: { going: 0, maybe: 0, not_going: 0 }
+            }
+          } as Attendance;
+        }
+        
+        try {
+          // Fetch the actual event data
+          const eventResponse = await api<{data: EventItem}>(`/api/events/${attendance.eventId}?populate=*`);
+          console.log('✅ Fetched event:', eventResponse.data);
+          
+          return {
+            id: attendance.attendanceId,
+            status: attendance.baseStatus,
+            event: eventResponse.data
+          } as Attendance;
+        } catch (error) {
+          console.error('❌ Failed to fetch event:', attendance.eventId, error);
+          
+          // Fallback to basic event info
+          return {
+            id: attendance.attendanceId,
+            status: attendance.baseStatus,
+            event: {
+              id: attendance.eventId,
+              title: `Event #${attendance.eventId}`,
+              slug: `event-${attendance.eventId}`,
+              description: 'Event details not available',
+              startDate: attendance.createdAt,
+              endDate: attendance.createdAt,
+              venue: { id: 1, name: 'Unknown Venue', city: 'Unknown' },
+              category: { id: 1, name: 'Unknown', slug: 'unknown' },
+              attendanceCounts: { going: 0, maybe: 0, not_going: 0 }
+            }
+          } as Attendance;
+        }
+      })
+    );
+    
+    console.log('✅ Final attendances with events:', attendancesWithEvents);
+    return attendancesWithEvents;
     
   } catch (error) {
     console.error('❌ Failed to fetch attendances:', error);
