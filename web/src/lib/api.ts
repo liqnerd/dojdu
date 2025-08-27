@@ -73,11 +73,33 @@ export async function fetchUpcomingEvents(): Promise<EventItem[]> {
 }
 
 export async function rsvp(eventId: number, status: RSVPStatus, jwt: string) {
-  return api(`/api/attendances/rsvp`, {
-    method: 'POST',
-    body: JSON.stringify({ eventId, status }),
+  // First, try to find existing attendance
+  const existingAttendances = await api<any[]>(`/api/attendances?filters[user][$eq]=${JSON.parse(atob(jwt.split('.')[1])).id}&filters[event][$eq]=${eventId}`, {
     headers: { Authorization: `Bearer ${jwt}` },
   });
+  
+  if (existingAttendances.length > 0) {
+    // Update existing attendance
+    const attendanceId = existingAttendances[0].id;
+    return api(`/api/attendances/${attendanceId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ data: { status } }),
+      headers: { Authorization: `Bearer ${jwt}` },
+    });
+  } else {
+    // Create new attendance
+    return api(`/api/attendances`, {
+      method: 'POST',
+      body: JSON.stringify({ 
+        data: { 
+          status, 
+          user: JSON.parse(atob(jwt.split('.')[1])).id,
+          event: eventId 
+        } 
+      }),
+      headers: { Authorization: `Bearer ${jwt}` },
+    });
+  }
 }
 
 export async function fetchEventBySlug(slug: string): Promise<EventItem> {
