@@ -11,6 +11,14 @@ export default function HomePage() {
   const isProduction = process.env.NODE_ENV === 'production';
   const hasStrapiUrl = strapiUrl && strapiUrl !== 'http://localhost:1337';
   
+  // Test all environment variables
+  const allEnvVars = {
+    NODE_ENV: process.env.NODE_ENV,
+    NEXT_PUBLIC_STRAPI_URL: process.env.NEXT_PUBLIC_STRAPI_URL,
+    VERCEL: process.env.VERCEL,
+    VERCEL_ENV: process.env.VERCEL_ENV,
+  };
+  
   return (
     <div className="space-y-10">
       {/* Debug info - remove this later */}
@@ -20,6 +28,13 @@ export default function HomePage() {
         <p>NODE_ENV: {process.env.NODE_ENV || 'NOT SET'}</p>
         <p>Is Production: {isProduction ? 'YES' : 'NO'}</p>
         <p>Has Valid Strapi URL: {hasStrapiUrl ? 'YES' : 'NO'}</p>
+        <p>VERCEL: {process.env.VERCEL || 'NOT SET'}</p>
+        <p>VERCEL_ENV: {process.env.VERCEL_ENV || 'NOT SET'}</p>
+        <hr className="my-2" />
+        <p><strong>All Environment Variables:</strong></p>
+        <pre className="text-xs bg-gray-100 p-2 rounded overflow-auto">
+          {JSON.stringify(allEnvVars, null, 2)}
+        </pre>
         {isProduction && !hasStrapiUrl && (
           <div className="bg-red-100 p-2 mt-2 rounded">
             <p className="text-red-800 font-bold">ERROR: Environment variable NEXT_PUBLIC_STRAPI_URL is not set in production!</p>
