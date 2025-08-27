@@ -5,11 +5,9 @@ export default [
   {
     name: 'strapi::cors',
     config: {
-      origin: true,
-      headers: '*',
-      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      keepHeaderOnError: true,
-      credentials: true,
+      enabled: true,
+      origin: '*',
+      credentials: false,
     },
   },
   'strapi::poweredBy',
