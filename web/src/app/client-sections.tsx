@@ -23,16 +23,20 @@ const fetcher = async (url: string) => {
 };
 
 export function ClientFeatured() {
-  const { data, error } = useSWR<EventItem[]>(`${STRAPI}/api/events/upcoming?size=9`, fetcher);
+  const { data, error } = useSWR<EventItem[]>(`${STRAPI}/api/events/upcoming?size=12`, fetcher);
   return (
-    <Section title="Featured" subtitle="Hand-picked highlights">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <Section title="Featured" subtitle="Hand-picked highlights for you" cta={<a className="text-sm underline" href="/upcoming">See all featured</a>}>
+      <HorizontalScroll>
         {error ? (
           <p className="text-muted-foreground">Unable to load events</p>
         ) : (
-          (data || []).slice(0, 6).map(e => <EventCard key={e.id} event={e} />)
+          (data || []).slice(0, 8).map(e => (
+            <div key={e.id} className="min-w-[320px] max-w-[320px]">
+              <EventCard event={e} />
+            </div>
+          ))
         )}
-      </div>
+      </HorizontalScroll>
     </Section>
   );
 }
