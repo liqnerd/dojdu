@@ -5,9 +5,10 @@ export default [
   {
     name: 'strapi::cors',
     config: {
-      enabled: true,
-      origin: '*',
-      credentials: false,
+      origin: ['https://dojdu.vercel.app', 'http://localhost:3000'],
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
+      headers: ['Content-Type', 'Authorization', 'Origin', 'Accept'],
     },
   },
   'strapi::poweredBy',
