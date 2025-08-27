@@ -235,7 +235,11 @@ export default function ProfilePage() {
           // If it's an unlike action, immediately remove from local state
           if (action === 'unliked' && eventId) {
             console.log(`🚀 PROFILE: Immediately removing event ${eventId} from local state`);
-            setLikedEvents(prev => prev.filter(like => like.event.id !== eventId));
+            setLikedEvents(prev => {
+              const filtered = prev.filter(like => like.event.id !== eventId);
+              console.log(`🎯 PROFILE: Removed event ${eventId}, went from ${prev.length} to ${filtered.length} liked events`);
+              return filtered;
+            });
           }
           
           // Add a small delay to allow Strapi database to sync after DELETE
@@ -255,9 +259,16 @@ export default function ProfilePage() {
             return true;
           });
           
-          setLikedEvents(Array.isArray(filteredLikes) ? filteredLikes : []);
+          // Only update if we have a meaningful change or if it's a like action
+          if (action === 'liked' || filteredLikes.length !== likedEvents.length) {
+            console.log(`🔄 PROFILE: Updating liked events: ${likedEvents.length} → ${filteredLikes.length}`);
+            setLikedEvents(Array.isArray(filteredLikes) ? filteredLikes : []);
+          } else {
+            console.log(`⏭️ PROFILE: No change needed, keeping current ${likedEvents.length} liked events`);
+          }
+          
           setErrorLikes(null);
-          console.log(`🎯 PROFILE: State updated with ${filteredLikes.length} filtered likes`);
+          console.log(`🎯 PROFILE: Final state has ${likedEvents.length} liked events`);
         } catch (error) {
           console.error('❌ PROFILE: Failed to refresh liked events:', error);
           setErrorLikes('Could not load your liked events');
@@ -398,8 +409,8 @@ export default function ProfilePage() {
         </h2>
         {errorLikes && <p className="text-sm text-red-600 mb-2">{errorLikes}</p>}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {likedEvents.map(({ id, event }) => (
-            <EventCard key={id} event={event} />
+          {likedEvents.map(({ event }) => (
+            <EventCard key={`liked-${event.id}`} event={event} />
           ))}
         </div>
         {likedEvents.length === 0 && !errorLikes && (

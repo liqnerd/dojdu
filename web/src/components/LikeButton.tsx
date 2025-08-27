@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { likeEvent, isEventLiked } from "@/lib/api";
 import { useToastContext } from "@/contexts/ToastContext";
-import { isEventRecentlyUnliked, markEventAsLiked, markEventAsUnliked } from "@/lib/likeState";
+import { isEventRecentlyUnliked, markEventAsLiked, markEventAsUnliked, subscribeLikeState, getGlobalLikeState } from "@/lib/likeState";
 
 interface LikeButtonProps {
   eventId: number;
@@ -16,12 +16,32 @@ export default function LikeButton({ eventId, initialLiked = false, className = 
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const { showSuccess, showError } = useToastContext();
 
+  // Subscribe to global like state changes
+  useEffect(() => {
+    const unsubscribe = subscribeLikeState((changedEventId, newLikedState) => {
+      if (changedEventId === eventId) {
+        console.log(`🔄 LIKEBUTTON: Global state change for event ${eventId} → ${newLikedState ? 'LIKED' : 'UNLIKED'}`);
+        setLiked(newLikedState);
+        setHasUserInteracted(true); // Prevent further server checks
+      }
+    });
+
+    return unsubscribe;
+  }, [eventId]);
+
   // Check if event is already liked on component mount (only if user hasn't interacted)
   useEffect(() => {
     if (hasUserInteracted) return; // Don't override user's action
     
     const checkLikedStatus = async () => {
       // Check global state first to prevent stale Strapi data
+      const globalState = getGlobalLikeState(eventId);
+      if (globalState !== null) {
+        console.log(`❤️ Initial check for event ${eventId}: ${globalState} (from global state)`);
+        setLiked(globalState);
+        return;
+      }
+      
       if (isEventRecentlyUnliked(eventId)) {
         console.log(`❤️ Initial check for event ${eventId}: false (recently unliked)`);
         setLiked(false);
@@ -32,7 +52,7 @@ export default function LikeButton({ eventId, initialLiked = false, className = 
       if (jwt) {
         try {
           const isLiked = await isEventLiked(eventId, jwt);
-          console.log(`❤️ Initial check for event ${eventId}: ${isLiked}`);
+          console.log(`❤️ Initial check for event ${eventId}: ${isLiked} (from server)`);
           setLiked(isLiked);
         } catch (error) {
           console.log('Could not check liked status:', error);
