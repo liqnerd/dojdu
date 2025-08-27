@@ -11,7 +11,6 @@ type Attendance = { id: number; status: RSVPStatus; event: EventItem };
 
 async function fetchMyAttendances(jwt: string): Promise<Attendance[]> {
   console.log('🔍 Fetching user attendances...');
-  const userId = JSON.parse(atob(jwt.split('.')[1])).id;
   
   try {
     // Fetch all attendances
@@ -146,7 +145,7 @@ async function fetchMyAttendances(jwt: string): Promise<Attendance[]> {
               // Match attendance ID with event ID or use consistent mapping
               if (allEventsResponse.length > 0) {
                 // Try to find an event with matching ID first
-                eventData = allEventsResponse.find(e => e.id === attendance.attendanceId);
+                eventData = allEventsResponse.find(e => e.id === attendance.attendanceId) || null;
                 
                 if (!eventData) {
                   // If no direct match, use a consistent mapping based on attendance ID

@@ -1,7 +1,6 @@
 "use client";
 import useSWR from 'swr';
 import Section from '@/components/Section';
-import HorizontalScroll from '@/components/HorizontalScroll';
 import ChaoticHorizontalScroll from '@/components/ChaoticHorizontalScroll';
 import EventCard from '@/components/EventCard';
 import ChaoticEventCard from '@/components/ChaoticEventCard';
