@@ -5,26 +5,8 @@ export default [
   {
     name: 'strapi::cors',
     config: {
-      origin: [
-        'http://localhost:3000',
-        'http://localhost:3001',
-        'http://127.0.0.1:3000',
-        'http://127.0.0.1:3001',
-        'https://localhost:3000',
-        'https://*.vercel.app',
-        'https://dojdu.vercel.app',
-        'https://dojdu-4npdeutqd-polaklxx-4230s-projects.vercel.app',
-        /https:\/\/dojdu.*\.vercel\.app$/,
-      ],
-      headers: [
-        'Content-Type',
-        'Authorization',
-        'Origin',
-        'Accept',
-        'Accept-Language',
-        'Access-Control-Request-Method',
-        'Access-Control-Request-Headers',
-      ],
+      origin: true,
+      headers: '*',
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       keepHeaderOnError: true,
       credentials: true,
