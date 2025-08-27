@@ -1,6 +1,8 @@
-export type RSVPStatus = 'going' | 'maybe' | 'not_going';
+import { EventItem, Category, Venue, Attendance, RSVPStatus } from './types';
 
-const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337';
+// Temporarily hardcode for testing
+const STRAPI_URL = 'https://dojdu-cms.onrender.com';
+// const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337';
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${STRAPI_URL}${path}`, {

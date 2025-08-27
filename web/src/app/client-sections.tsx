@@ -5,7 +5,9 @@ import HorizontalScroll from '@/components/HorizontalScroll';
 import EventCard from '@/components/EventCard';
 import { EventItem } from '@/lib/api';
 
-const STRAPI = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337';
+// Temporarily hardcode for testing
+const STRAPI = 'https://dojdu-cms.onrender.com';
+// const STRAPI = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337';
 const fetcher = (url: string) => fetch(url, { cache: 'no-store' }).then(r => r.json());
 
 export function ClientFeatured() {

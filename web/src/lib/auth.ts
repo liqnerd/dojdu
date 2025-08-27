@@ -1,4 +1,6 @@
-const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337';
+// Temporarily hardcode for testing
+const STRAPI_URL = 'https://dojdu-cms.onrender.com';
+// const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337';
 
 export type CurrentUser = { id: number; username: string; email: string } | null;
 
