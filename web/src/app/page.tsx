@@ -3,16 +3,28 @@ import { ClientFeatured, ClientNearYou, ClientPopular, ClientSponsored, ClientBy
 
 export default function HomePage() {
   // Debug environment variable
-  console.log('STRAPI URL:', process.env.NEXT_PUBLIC_STRAPI_URL);
+  const strapiUrl = process.env.NEXT_PUBLIC_STRAPI_URL;
+  console.log('STRAPI URL:', strapiUrl);
   console.log('NODE_ENV:', process.env.NODE_ENV);
+  
+  // Check if we're in production and environment variable is missing
+  const isProduction = process.env.NODE_ENV === 'production';
+  const hasStrapiUrl = strapiUrl && strapiUrl !== 'http://localhost:1337';
   
   return (
     <div className="space-y-10">
       {/* Debug info - remove this later */}
       <div className="bg-yellow-100 p-4 rounded border">
         <p><strong>Debug Info:</strong></p>
-        <p>STRAPI URL: {process.env.NEXT_PUBLIC_STRAPI_URL || 'NOT SET'}</p>
+        <p>STRAPI URL: {strapiUrl || 'NOT SET'}</p>
         <p>NODE_ENV: {process.env.NODE_ENV || 'NOT SET'}</p>
+        <p>Is Production: {isProduction ? 'YES' : 'NO'}</p>
+        <p>Has Valid Strapi URL: {hasStrapiUrl ? 'YES' : 'NO'}</p>
+        {isProduction && !hasStrapiUrl && (
+          <div className="bg-red-100 p-2 mt-2 rounded">
+            <p className="text-red-800 font-bold">ERROR: Environment variable NEXT_PUBLIC_STRAPI_URL is not set in production!</p>
+          </div>
+        )}
       </div>
       
       <section className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-fuchsia-500/10 via-sky-400/10 to-pink-500/10">

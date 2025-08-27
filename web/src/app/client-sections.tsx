@@ -13,6 +13,19 @@ export function ClientFeatured() {
   console.log('ClientFeatured - STRAPI URL:', process.env.NEXT_PUBLIC_STRAPI_URL);
   
   const { data: events, error } = useSWR<EventItem[]>(`${STRAPI}/api/events/upcoming?size=9`, fetcher);
+  
+  // Show error state if API call fails
+  if (error) {
+    return (
+      <Section title="Featured" subtitle="Hand-picked highlights">
+        <div className="bg-red-50 p-4 rounded border">
+          <p className="text-red-800">Error loading events: {error.message}</p>
+          <p className="text-sm text-red-600">Strapi URL: {STRAPI}</p>
+        </div>
+      </Section>
+    );
+  }
+  
   return (
     <Section title="Featured" subtitle="Hand-picked highlights">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
