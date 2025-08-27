@@ -54,7 +54,7 @@ export default function ChaoticHorizontalScroll({ children }: { children: ReactN
   return (
     <div className="relative">
       <div 
-        className={`overflow-x-auto overflow-y-visible no-scrollbar ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+        className={`overflow-x-auto overflow-y-visible scrollbar-hidden ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
         ref={ref}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -63,16 +63,21 @@ export default function ChaoticHorizontalScroll({ children }: { children: ReactN
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        style={{ userSelect: 'none' }}
+        style={{ 
+          userSelect: 'none',
+          scrollbarWidth: 'none', /* Firefox */
+          msOverflowStyle: 'none', /* Internet Explorer 10+ */
+          WebkitScrollbar: { display: 'none' } /* WebKit */
+        }}
       >
-        <div className="flex gap-0 pr-8 pt-1 pb-8">
+        <div className="flex gap-0 pr-8 pt-8 pb-16">
           {React.Children.map(children, (child, index) => (
             <div 
               key={index} 
               className="flex-shrink-0"
               style={{ 
                 marginLeft: index > 0 ? '-20px' : '0px',
-                zIndex: React.Children.count(children) - index
+                zIndex: index + 1
               }}
             >
               {child}
