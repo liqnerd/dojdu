@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { likeEvent, isEventLiked } from "@/lib/api";
 import { useToastContext } from "@/contexts/ToastContext";
+import { isEventRecentlyUnliked, markEventAsLiked, markEventAsUnliked } from "@/lib/likeState";
 
 interface LikeButtonProps {
   eventId: number;
@@ -20,6 +21,13 @@ export default function LikeButton({ eventId, initialLiked = false, className = 
     if (hasUserInteracted) return; // Don't override user's action
     
     const checkLikedStatus = async () => {
+      // Check global state first to prevent stale Strapi data
+      if (isEventRecentlyUnliked(eventId)) {
+        console.log(`❤️ Initial check for event ${eventId}: false (recently unliked)`);
+        setLiked(false);
+        return;
+      }
+      
       const jwt = localStorage.getItem("jwt");
       if (jwt) {
         try {
@@ -69,10 +77,12 @@ export default function LikeButton({ eventId, initialLiked = false, className = 
       setLiked(result.liked);
       console.log(`🎯 FINAL STATE SET: Event ${eventId} → ${result.liked ? 'LIKED' : 'UNLIKED'}`);
       
-      // Show success toast
+      // Update global state to prevent other components from showing stale data
       if (result.liked) {
+        markEventAsLiked(eventId);
         showSuccess("❤️ Event liked and saved to your profile!", 2500);
       } else {
+        markEventAsUnliked(eventId);
         showSuccess("💔 Event unliked and removed from your profile!", 2500);
       }
       
