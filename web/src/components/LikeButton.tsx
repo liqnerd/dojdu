@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { likeEvent, isEventLiked } from "@/lib/api";
+import { useToastContext } from "@/contexts/ToastContext";
 
 interface LikeButtonProps {
   eventId: number;
@@ -12,6 +13,7 @@ export default function LikeButton({ eventId, initialLiked = false, className = 
   const [liked, setLiked] = useState(initialLiked);
   const [isAnimating, setIsAnimating] = useState(false);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
+  const { showSuccess, showError } = useToastContext();
 
   // Check if event is already liked on component mount (only if user hasn't interacted)
   useEffect(() => {
@@ -67,6 +69,13 @@ export default function LikeButton({ eventId, initialLiked = false, className = 
       setLiked(result.liked);
       console.log(`🎯 FINAL STATE SET: Event ${eventId} → ${result.liked ? 'LIKED' : 'UNLIKED'}`);
       
+      // Show success toast
+      if (result.liked) {
+        showSuccess("❤️ Event liked and saved to your profile!", 2500);
+      } else {
+        showSuccess("💔 Event unliked and removed from your profile!", 2500);
+      }
+      
       // Trigger a custom event to refresh profile data
       window.dispatchEvent(new CustomEvent('likesChanged'));
       console.log(`📡 DISPATCHED likesChanged event for event ${eventId}`);
@@ -74,6 +83,10 @@ export default function LikeButton({ eventId, initialLiked = false, className = 
     } catch (error) {
       console.error(`❌ API FAILED for event ${eventId}:`, error);
       console.log(`🔄 REVERTING STATE: Event ${eventId} → ${!newLikedState ? 'LIKED' : 'UNLIKED'}`);
+      
+      // Show error toast
+      showError("❌ Failed to save like. Please try again!", 3000);
+      
       // Revert to opposite of what we tried to set
       setLiked(!newLikedState);
     }
