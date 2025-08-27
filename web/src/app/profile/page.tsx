@@ -224,17 +224,40 @@ export default function ProfilePage() {
 
   // Listen for likes changes and refresh liked events
   useEffect(() => {
-    const handleLikesChanged = async () => {
-      console.log('🔥 PROFILE: likesChanged event received!');
+    const handleLikesChanged = async (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { eventId, action } = customEvent.detail || {};
+      console.log(`🔥 PROFILE: likesChanged event received for event ${eventId} (${action})!`);
+      
       const jwt = getJwt();
       if (jwt) {
         try {
+          // If it's an unlike action, immediately remove from local state
+          if (action === 'unliked' && eventId) {
+            console.log(`🚀 PROFILE: Immediately removing event ${eventId} from local state`);
+            setLikedEvents(prev => prev.filter(like => like.event.id !== eventId));
+          }
+          
+          // Add a small delay to allow Strapi database to sync after DELETE
+          console.log('⏱️ PROFILE: Waiting 500ms for Strapi to sync...');
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
           console.log('🔄 PROFILE: Refreshing liked events...');
           const likes = await fetchMyLikes(jwt);
           console.log(`✅ PROFILE: Got ${likes.length} liked events:`, likes);
-          setLikedEvents(Array.isArray(likes) ? likes : []);
+          
+          // Additional filtering to remove any records that should be unliked
+          const filteredLikes = likes.filter(like => {
+            if (action === 'unliked' && eventId && like.event.id === eventId) {
+              console.log(`🚫 PROFILE: Filtering out unliked event ${eventId} from fresh data`);
+              return false;
+            }
+            return true;
+          });
+          
+          setLikedEvents(Array.isArray(filteredLikes) ? filteredLikes : []);
           setErrorLikes(null);
-          console.log('🎯 PROFILE: State updated with new likes');
+          console.log(`🎯 PROFILE: State updated with ${filteredLikes.length} filtered likes`);
         } catch (error) {
           console.error('❌ PROFILE: Failed to refresh liked events:', error);
           setErrorLikes('Could not load your liked events');

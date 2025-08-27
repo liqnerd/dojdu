@@ -76,9 +76,11 @@ export default function LikeButton({ eventId, initialLiked = false, className = 
         showSuccess("💔 Event unliked and removed from your profile!", 2500);
       }
       
-      // Trigger a custom event to refresh profile data
-      window.dispatchEvent(new CustomEvent('likesChanged'));
-      console.log(`📡 DISPATCHED likesChanged event for event ${eventId}`);
+      // Trigger a custom event to refresh profile data with event details
+      window.dispatchEvent(new CustomEvent('likesChanged', { 
+        detail: { eventId, action: result.liked ? 'liked' : 'unliked' }
+      }));
+      console.log(`📡 DISPATCHED likesChanged event for event ${eventId} (${result.liked ? 'liked' : 'unliked'})`);
       
     } catch (error) {
       console.error(`❌ API FAILED for event ${eventId}:`, error);
