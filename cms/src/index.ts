@@ -196,8 +196,7 @@ export default {
             category: {
               controllers: {
                 category: {
-                  find: { enabled: true, policy: '' },
-                  findOne: { enabled: true, policy: '' },
+                  publicList: { enabled: true, policy: '' },
                 },
               },
             },
@@ -240,8 +239,7 @@ export default {
             category: {
               controllers: {
                 category: {
-                  find: { enabled: true, policy: '' },
-                  findOne: { enabled: true, policy: '' },
+                  publicList: { enabled: true, policy: '' },
                 },
               },
             },
