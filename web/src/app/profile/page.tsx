@@ -23,8 +23,8 @@ async function fetchMyAttendances(jwt: string): Promise<Attendance[]> {
       id: typedItem.id,
       status: typedItem.attributes.status,
       event: {
-        id: eventData.id,
         ...eventData.attributes,
+        id: eventData.id, // Override the id from attributes with the correct one
         attendanceCounts: { going: 0, maybe: 0, not_going: 0 } // We'll calculate this later if needed
       }
     };
