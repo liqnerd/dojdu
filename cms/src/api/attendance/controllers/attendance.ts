@@ -2,13 +2,16 @@ import { factories } from '@strapi/strapi';
 
 export default factories.createCoreController('api::attendance.attendance', ({ strapi }) => ({
   async rsvp(ctx) {
+    console.log('RSVP endpoint called with:', ctx.request.body);
     const { eventId, status } = ctx.request.body;
 
     if (!eventId || !['going', 'maybe', 'not_going'].includes(status)) {
+      console.log('Invalid payload:', { eventId, status });
       return ctx.badRequest('Invalid payload');
     }
 
     if (!ctx.state.user) {
+      console.log('No authenticated user found');
       return ctx.unauthorized('Authentication required');
     }
 
