@@ -66,18 +66,17 @@ export default function ChaoticHorizontalScroll({ children }: { children: ReactN
         style={{ 
           userSelect: 'none',
           scrollbarWidth: 'none', /* Firefox */
-          msOverflowStyle: 'none', /* Internet Explorer 10+ */
-          WebkitScrollbar: { display: 'none' } /* WebKit */
+          msOverflowStyle: 'none' /* Internet Explorer 10+ */
         }}
       >
-        <div className="flex gap-0 pr-8 pt-8 pb-16">
+        <div className="flex gap-0 pr-8 pt-16 pb-24">
           {React.Children.map(children, (child, index) => (
             <div 
               key={index} 
               className="flex-shrink-0"
               style={{ 
                 marginLeft: index > 0 ? '-20px' : '0px',
-                zIndex: index + 1
+                zIndex: React.Children.count(children) - index
               }}
             >
               {child}

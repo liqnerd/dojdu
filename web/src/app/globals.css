@@ -121,11 +121,25 @@
   }
 }
 
-/* Hide scrollbars completely */
+/* FORCE HIDE scrollbars completely for Sponsored section */
 .scrollbar-hidden {
-  -ms-overflow-style: none;  /* Internet Explorer 10+ */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none !important;  /* Internet Explorer 10+ */
+  scrollbar-width: none !important;  /* Firefox */
+  overflow: -moz-scrollbars-none !important; /* Firefox (older) */
 }
+
 .scrollbar-hidden::-webkit-scrollbar { 
-  display: none;  /* Safari and Chrome */
+  display: none !important;  /* Safari and Chrome */
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
+/* Additional fallback for stubborn scrollbars */
+.scrollbar-hidden::-webkit-scrollbar-track {
+  display: none !important;
+}
+
+.scrollbar-hidden::-webkit-scrollbar-thumb {
+  display: none !important;
 }
