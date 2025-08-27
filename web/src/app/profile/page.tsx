@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { fetchCurrentUser, getJwt, clearJwt } from '@/lib/auth';
-import { RSVPStatus, EventItem, fetchMyEvents, deleteMyEvent } from '@/lib/api';
+import { RSVPStatus, EventItem, fetchMyEvents, deleteMyEvent, api } from '@/lib/api';
 
 import { Button } from '@/components/ui/button';
 import EventCard from '@/components/EventCard';
@@ -10,13 +10,9 @@ import EventCard from '@/components/EventCard';
 type Attendance = { id: number; status: RSVPStatus; event: EventItem };
 
 async function fetchMyAttendances(jwt: string): Promise<Attendance[]> {
-  const base = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337';
-  const res = await fetch(`${base}/api/attendances/me`, {
+  return api<Attendance[]>('/api/attendances/me', {
     headers: { Authorization: `Bearer ${jwt}` },
-    cache: 'no-store',
   });
-  if (!res.ok) throw new Error('Failed to load attendances');
-  return res.json();
 }
 
 export default function ProfilePage() {
