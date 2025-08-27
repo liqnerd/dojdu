@@ -79,24 +79,49 @@ export async function rsvp(eventId: number, status: RSVPStatus, jwt: string) {
   const userId = JSON.parse(atob(jwt.split('.')[1])).id;
   console.log('User ID:', userId);
   
-  // Direct POST - no checking for existing records
-  const response = await api(`/api/attendances`, {
-    method: 'POST',
-    body: JSON.stringify({ 
-      data: { 
-        status, 
-        user: userId,
-        event: eventId
-      } 
-    }),
-    headers: { 
-      'Authorization': `Bearer ${jwt}`,
-      'Content-Type': 'application/json'
+  // Try different relation formats for Strapi v5
+  const formats = [
+    // Format 1: connect syntax
+    { 
+      status, 
+      user: { connect: [userId] },
+      event: { connect: [eventId] }
     },
-  });
-  
-  console.log('RSVP response:', response);
-  return response;
+    // Format 2: direct IDs
+    { 
+      status, 
+      user: userId,
+      event: eventId
+    },
+    // Format 3: documentId syntax (Strapi v5)
+    { 
+      status, 
+      user: { documentId: userId },
+      event: { documentId: eventId }
+    }
+  ];
+
+  for (let i = 0; i < formats.length; i++) {
+    try {
+      console.log(`Trying format ${i + 1}:`, formats[i]);
+      const response = await api(`/api/attendances`, {
+        method: 'POST',
+        body: JSON.stringify({ data: formats[i] }),
+        headers: { 
+          'Authorization': `Bearer ${jwt}`,
+          'Content-Type': 'application/json'
+        },
+      });
+      
+      console.log('RSVP SUCCESS with format', i + 1, ':', response);
+      return response;
+    } catch (error) {
+      console.log(`Format ${i + 1} failed:`, error);
+      if (i === formats.length - 1) {
+        throw error; // Throw the last error if all formats fail
+      }
+    }
+  }
 }
 
 export async function fetchEventBySlug(slug: string): Promise<EventItem> {
