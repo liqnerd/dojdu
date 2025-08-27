@@ -73,54 +73,48 @@ export async function fetchUpcomingEvents(): Promise<EventItem[]> {
 }
 
 export async function rsvp(eventId: number, status: RSVPStatus, jwt: string) {
-  console.log('🚀 RSVP v4: Direct POST only - no filter queries!');
+  console.log('🚀 RSVP v5: Testing permissions and basic creation');
   console.log('Event ID:', eventId, 'Status:', status);
   
   const userId = JSON.parse(atob(jwt.split('.')[1])).id;
   console.log('User ID:', userId);
   
-  // Try different relation formats for Strapi v5
-  const formats = [
-    // Format 1: connect syntax
-    { 
-      status, 
-      user: { connect: [userId] },
-      event: { connect: [eventId] }
-    },
-    // Format 2: direct IDs
-    { 
-      status, 
-      user: userId,
-      event: eventId
-    },
-    // Format 3: documentId syntax (Strapi v5)
-    { 
-      status, 
-      user: { documentId: userId },
-      event: { documentId: eventId }
-    }
-  ];
-
-  for (let i = 0; i < formats.length; i++) {
-    try {
-      console.log(`Trying format ${i + 1}:`, formats[i]);
-      const response = await api(`/api/attendances`, {
-        method: 'POST',
-        body: JSON.stringify({ data: formats[i] }),
-        headers: { 
-          'Authorization': `Bearer ${jwt}`,
-          'Content-Type': 'application/json'
-        },
-      });
-      
-      console.log('RSVP SUCCESS with format', i + 1, ':', response);
-      return response;
-    } catch (error) {
-      console.log(`Format ${i + 1} failed:`, error);
-      if (i === formats.length - 1) {
-        throw error; // Throw the last error if all formats fail
-      }
-    }
+  // First, test if we can read attendances (permission check)
+  try {
+    console.log('Testing read permissions...');
+    const readTest = await api(`/api/attendances?pagination[limit]=1`, {
+      headers: { 'Authorization': `Bearer ${jwt}` },
+    });
+    console.log('✅ Read permissions work:', readTest);
+  } catch (readError) {
+    console.log('❌ Read permissions failed:', readError);
+    throw new Error('No read permissions for attendances');
+  }
+  
+  // Try minimal data structure
+  try {
+    console.log('Trying minimal attendance creation...');
+    const response = await api(`/api/attendances`, {
+      method: 'POST',
+      body: JSON.stringify({ 
+        data: { 
+          status: status
+          // Trying without relations first
+        } 
+      }),
+      headers: { 
+        'Authorization': `Bearer ${jwt}`,
+        'Content-Type': 'application/json'
+      },
+    });
+    
+    console.log('✅ Minimal creation SUCCESS:', response);
+    return response;
+  } catch (minimalError) {
+    console.log('❌ Minimal creation failed:', minimalError);
+    
+    // If minimal fails, the content type itself has issues
+    throw new Error('Attendance creation not allowed - check Strapi permissions and schema');
   }
 }
 
