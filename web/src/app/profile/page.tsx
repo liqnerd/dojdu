@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { fetchCurrentUser, getJwt, clearJwt } from '@/lib/auth';
-import { RSVPStatus, EventItem, fetchMyEvents, deleteMyEvent, api } from '@/lib/api';
+import { RSVPStatus, EventItem, fetchMyEvents, deleteMyEvent, fetchMyLikes, api, Like } from '@/lib/api';
 
 import { Button } from '@/components/ui/button';
 import EventCard from '@/components/EventCard';
@@ -179,8 +179,10 @@ export default function ProfilePage() {
   const [user, setUser] = useState<{ username: string; email: string } | null>(null);
   const [data, setData] = useState<Attendance[]>([]);
   const [myEvents, setMyEvents] = useState<EventItem[]>([]);
+  const [likedEvents, setLikedEvents] = useState<Like[]>([]);
   const [errorRsvp, setErrorRsvp] = useState<string | null>(null);
   const [errorMine, setErrorMine] = useState<string | null>(null);
+  const [errorLikes, setErrorLikes] = useState<string | null>(null);
   const getInitials = (name?: string) => (name ? name.split(/\s+/).map(p => p[0]).slice(0,2).join('').toUpperCase() : 'U');
 
   useEffect(() => {
@@ -203,6 +205,13 @@ export default function ProfilePage() {
         } catch {
           setErrorMine('Could not load your events');
           setMyEvents([]); // Ensure myEvents is always an array
+        }
+        try {
+          const likes = await fetchMyLikes(jwt);
+          setLikedEvents(Array.isArray(likes) ? likes : []);
+        } catch {
+          setErrorLikes('Could not load your liked events');
+          setLikedEvents([]); // Ensure likedEvents is always an array
         }
       }
     })();
@@ -263,6 +272,7 @@ export default function ProfilePage() {
               <div><span className="font-semibold">{groups.going.length}</span> Going</div>
               <div><span className="font-semibold">{groups.maybe.length}</span> Maybe</div>
               <div><span className="font-semibold">{groups.not_going.length}</span> Not</div>
+              <div><span className="font-semibold text-red-500">{likedEvents.length}</span> ❤️ Liked</div>
             </div>
             <Button variant="outline" onClick={onLogout}>Logout</Button>
           </div>
@@ -321,6 +331,22 @@ export default function ProfilePage() {
             <EventCard key={id} event={event} />
           ))}
         </div>
+      </section>
+
+      <section>
+        <h2 className="text-xl font-semibold mb-3 flex items-center gap-2">
+          <span>❤️ Liked Events</span>
+          <span className="text-sm text-muted-foreground">({likedEvents.length})</span>
+        </h2>
+        {errorLikes && <p className="text-sm text-red-600 mb-2">{errorLikes}</p>}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {likedEvents.map(({ id, event }) => (
+            <EventCard key={id} event={event} />
+          ))}
+        </div>
+        {likedEvents.length === 0 && !errorLikes && (
+          <p className="text-sm text-muted-foreground">No liked events yet. Start exploring and heart the events you love! 💖</p>
+        )}
       </section>
     </div>
   );

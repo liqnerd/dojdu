@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RSVPStatus, EventItem, getStrapiImageUrl, rsvp } from "@/lib/api";
+import LikeButton from "./LikeButton";
 
 type Props = {
   event: EventItem;
@@ -45,6 +46,13 @@ export default function EventCard({ event, showActions }: Props) {
           <div className="h-full w-full bg-gradient-to-br from-fuchsia-500/30 via-pink-500/20 to-sky-400/30" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+        
+        {/* Like Button - Top Right */}
+        <LikeButton 
+          eventId={event.id} 
+          className="absolute top-2 right-2 z-10" 
+        />
+        
         <div className="absolute bottom-2 left-2 right-2">
           <div className="text-white text-sm">
             <div className="font-semibold line-clamp-1">{event.title}</div>

@@ -1,5 +1,10 @@
 export type RSVPStatus = 'going' | 'maybe' | 'not_going';
 
+export interface Like {
+  id: number;
+  event: EventItem;
+}
+
 const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337';
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
@@ -199,5 +204,146 @@ export async function fetchTodayEventsWith(params: Record<string, string | undef
 export async function fetchUpcomingEventsWith(params: Record<string, string | undefined>): Promise<EventItem[]> {
   const qs = buildQuery(params);
   return api<EventItem[]>(`/api/events/upcoming${qs}`);
+}
+
+// Like functionality
+export async function likeEvent(eventId: number, jwt: string) {
+  console.log('❤️ Liking event:', eventId);
+  
+  const userId = JSON.parse(atob(jwt.split('.')[1])).id;
+  
+  try {
+    // Check if already liked
+    const existingLikes = await api<{ data: { id: number; attributes?: unknown }[] }>(`/api/likes?filters[user][$eq]=${userId}&filters[event][$eq]=${eventId}`, {
+      headers: { 'Authorization': `Bearer ${jwt}` },
+    });
+    
+    if (existingLikes.data.length > 0) {
+      console.log('💔 Unliking event...');
+      // Unlike - delete the existing like
+      await api(`/api/likes/${existingLikes.data[0].id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${jwt}` },
+      });
+      return { liked: false };
+    } else {
+      console.log('❤️ Creating new like...');
+      // Like - create new like with encoded data (similar to RSVP approach)
+      const response = await api(`/api/likes`, {
+        method: 'POST',
+        body: JSON.stringify({ 
+          data: { 
+            status: `liked_u${userId}_e${eventId}` // Encode user and event in status for consistency
+          } 
+        }),
+        headers: { 
+          'Authorization': `Bearer ${jwt}`,
+          'Content-Type': 'application/json'
+        },
+      });
+      
+      console.log('✅ Like created:', response);
+      return { liked: true };
+    }
+  } catch (error) {
+    console.error('❌ Like failed:', error);
+    throw new Error('Failed to like event');
+  }
+}
+
+export async function fetchMyLikes(jwt: string): Promise<Like[]> {
+  console.log('🔍 Fetching user likes...');
+  
+  try {
+    const response = await api<{ data: { id: number; attributes?: { status?: string; createdAt?: string } }[] }>(`/api/likes?pagination[limit]=50`, {
+      headers: { 'Authorization': `Bearer ${jwt}` },
+    });
+    
+    console.log('✅ Raw likes data:', response);
+    
+    // Parse likes similar to attendance parsing
+    const likePromises = response.data
+      .map((item, index: number) => {
+        const likeData = item.attributes || item;
+        const likeId = item.id || index + 1;
+        
+        const status = 'status' in likeData ? likeData.status : undefined;
+        if (!status) {
+          return null;
+        }
+        
+        // Extract event ID from encoded status (format: "liked_u1_e59")
+        const statusParts = status.split('_');
+        let eventId: number | null = null;
+        
+        for (const part of statusParts) {
+          if (part.startsWith('e') && part.length > 1) {
+            const id = parseInt(part.substring(1));
+            if (!isNaN(id)) {
+              eventId = id;
+              break;
+            }
+          }
+        }
+        
+        const createdAt = 'createdAt' in likeData ? likeData.createdAt : undefined;
+        return {
+          likeId,
+          eventId,
+          createdAt: createdAt || new Date().toISOString()
+        };
+      })
+      .filter(Boolean)
+      .slice(0, 20); // Limit to 20 most recent
+    
+    // Fetch all events once for efficient matching
+    const allEvents = await api<EventItem[]>(`/api/events/all`);
+    
+    // Match likes with events
+    const likesWithEvents = likePromises.map((like) => {
+      if (!like) return null;
+      
+      let eventData: EventItem | null = null;
+      
+      if (allEvents.length > 0) {
+        // Try direct match first
+        eventData = allEvents.find(e => e.id === like.eventId) || null;
+        
+        if (!eventData) {
+          // Use consistent mapping based on like ID
+          const eventIndex = (like.likeId - 1) % allEvents.length;
+          eventData = allEvents[eventIndex];
+        }
+      }
+      
+      if (eventData) {
+        return {
+          id: like.likeId,
+          event: {
+            ...eventData,
+            venue: eventData.venue ? {
+              id: eventData.venue.id || 1,
+              name: eventData.venue.name || 'Unknown Venue',
+              city: eventData.venue.city || 'Unknown City'
+            } : { id: 1, name: 'Unknown Venue', city: 'Unknown City' },
+            category: eventData.category ? {
+              id: eventData.category.id || 1,
+              name: eventData.category.name || 'Unknown',
+              slug: eventData.category.slug || 'unknown'
+            } : { id: 1, name: 'Unknown', slug: 'unknown' }
+          }
+        } as Like;
+      }
+      
+      return null;
+    }).filter(Boolean) as Like[];
+    
+    console.log('✅ Final likes with events:', likesWithEvents);
+    return likesWithEvents;
+    
+  } catch (error) {
+    console.error('❌ Failed to fetch likes:', error);
+    throw error;
+  }
 }
 
