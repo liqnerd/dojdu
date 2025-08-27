@@ -159,5 +159,100 @@ export default {
     } catch (e) {
       strapi.log.warn('Feed bootstrap failed');
     }
+
+    // Configure permissions for API endpoints
+    try {
+      const pluginStore = strapi.store({ type: 'plugin', name: 'users-permissions' });
+      
+      // Get the public role
+      const publicRole = await strapi
+        .query('plugin::users-permissions.role')
+        .findOne({ where: { type: 'public' } });
+      
+      // Get the authenticated role
+      const authenticatedRole = await strapi
+        .query('plugin::users-permissions.role')
+        .findOne({ where: { type: 'authenticated' } });
+
+      if (publicRole) {
+        // Set permissions for public role
+        const publicPermissions = await pluginStore.get({ key: 'permissions' });
+        const updatedPublicPermissions = {
+          ...publicPermissions,
+          api: {
+            ...publicPermissions.api,
+            event: {
+              controllers: {
+                event: {
+                  today: { enabled: true, policy: '' },
+                  upcoming: { enabled: true, policy: '' },
+                  all: { enabled: true, policy: '' },
+                  bySlug: { enabled: true, policy: '' },
+                  find: { enabled: true, policy: '' },
+                  findOne: { enabled: true, policy: '' },
+                },
+              },
+            },
+            category: {
+              controllers: {
+                category: {
+                  find: { enabled: true, policy: '' },
+                  findOne: { enabled: true, policy: '' },
+                },
+              },
+            },
+          },
+        };
+        await pluginStore.set({ key: 'permissions', value: updatedPublicPermissions });
+      }
+
+      if (authenticatedRole) {
+        // Set permissions for authenticated role  
+        const authPermissions = await pluginStore.get({ key: 'permissions' });
+        const updatedAuthPermissions = {
+          ...authPermissions,
+          api: {
+            ...authPermissions.api,
+            event: {
+              controllers: {
+                event: {
+                  today: { enabled: true, policy: '' },
+                  upcoming: { enabled: true, policy: '' },
+                  all: { enabled: true, policy: '' },
+                  bySlug: { enabled: true, policy: '' },
+                  find: { enabled: true, policy: '' },
+                  findOne: { enabled: true, policy: '' },
+                  createEvent: { enabled: true, policy: '' },
+                  mine: { enabled: true, policy: '' },
+                  updateOwn: { enabled: true, policy: '' },
+                  deleteOwn: { enabled: true, policy: '' },
+                },
+              },
+            },
+            attendance: {
+              controllers: {
+                attendance: {
+                  rsvp: { enabled: true, policy: '' },
+                  me: { enabled: true, policy: '' },
+                },
+              },
+            },
+            category: {
+              controllers: {
+                category: {
+                  find: { enabled: true, policy: '' },
+                  findOne: { enabled: true, policy: '' },
+                },
+              },
+            },
+          },
+        };
+        await pluginStore.set({ key: 'permissions', value: updatedAuthPermissions });
+      }
+
+      strapi.log.info('✅ API permissions configured successfully');
+    } catch (error) {
+      strapi.log.error('❌ Failed to configure API permissions:', error);
+    }
   },
 };
