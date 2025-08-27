@@ -22,7 +22,7 @@ export default function RegisterPage() {
       const res = await register(username, email, password);
       window.localStorage.setItem('jwt', res.jwt);
       router.push('/');
-    } catch (err) {
+    } catch {
       setError('Registration failed');
     } finally {
       setLoading(false);

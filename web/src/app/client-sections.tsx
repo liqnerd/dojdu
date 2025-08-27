@@ -5,33 +5,15 @@ import HorizontalScroll from '@/components/HorizontalScroll';
 import EventCard from '@/components/EventCard';
 import { EventItem } from '@/lib/api';
 
-// Temporarily hardcode for testing
-const STRAPI = 'https://dojdu-cms.onrender.com';
-// const STRAPI = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337';
+const STRAPI = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337';
 const fetcher = (url: string) => fetch(url, { cache: 'no-store' }).then(r => r.json());
 
 export function ClientFeatured() {
-  // Debug environment variable
-  console.log('ClientFeatured - STRAPI URL:', process.env.NEXT_PUBLIC_STRAPI_URL);
-  
-  const { data: events, error } = useSWR<EventItem[]>(`${STRAPI}/api/events/upcoming?size=9`, fetcher);
-  
-  // Show error state if API call fails
-  if (error) {
-    return (
-      <Section title="Featured" subtitle="Hand-picked highlights">
-        <div className="bg-red-50 p-4 rounded border">
-          <p className="text-red-800">Error loading events: {error.message}</p>
-          <p className="text-sm text-red-600">Strapi URL: {STRAPI}</p>
-        </div>
-      </Section>
-    );
-  }
-  
+  const { data } = useSWR<EventItem[]>(`${STRAPI}/api/events/upcoming?size=9`, fetcher);
   return (
     <Section title="Featured" subtitle="Hand-picked highlights">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {(events || []).slice(0, 6).map(e => <EventCard key={e.id} event={e} />)}
+        {(data || []).slice(0, 6).map(e => <EventCard key={e.id} event={e} />)}
       </div>
     </Section>
   );

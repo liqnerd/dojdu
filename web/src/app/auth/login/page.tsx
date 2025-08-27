@@ -21,7 +21,7 @@ export default function LoginPage() {
       const res = await login(identifier, password);
       window.localStorage.setItem('jwt', res.jwt);
       router.push('/');
-    } catch (err) {
+    } catch {
       setError('Invalid credentials');
     } finally {
       setLoading(false);

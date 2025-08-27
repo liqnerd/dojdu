@@ -1,8 +1,6 @@
-import { EventItem, Category, Venue, Attendance, RSVPStatus } from './types';
+export type RSVPStatus = 'going' | 'maybe' | 'not_going';
 
-// Temporarily hardcode for testing
-const STRAPI_URL = 'https://dojdu-cms.onrender.com';
-// const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337';
+const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337';
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${STRAPI_URL}${path}`, {
@@ -63,6 +61,7 @@ export interface EventItem {
   venue?: Venue;
   image?: Media;
   attendanceCounts?: { going: number; maybe: number; not_going: number };
+  owner?: { id: number };
 }
 
 export async function fetchTodayEvents(): Promise<EventItem[]> {
@@ -91,7 +90,7 @@ export async function fetchAllEvents(params: Record<string, string | undefined>)
 }
 
 export async function fetchCategories(): Promise<Category[]> {
-  return api<Category[]>(`/api/categories` as any);
+  return api<Category[]>(`/api/categories`);
 }
 
 export async function uploadImage(file: File, jwt?: string): Promise<{ id: number }> {
@@ -113,7 +112,7 @@ export async function fetchMyEvents(jwt: string): Promise<EventItem[]> {
   return api<EventItem[]>(`/api/events/mine`, { headers: { Authorization: `Bearer ${jwt}` } });
 }
 
-export async function updateMyEvent(id: number, payload: Partial<EventItem>, jwt: string) {
+export async function updateMyEvent(id: number, payload: Partial<EventItem> & { city?: string; categoryId?: number; imageId?: number }, jwt: string) {
   return api(`/api/events/${id}`, {
     method: 'PUT',
     headers: { Authorization: `Bearer ${jwt}` },

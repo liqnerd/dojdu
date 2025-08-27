@@ -57,15 +57,15 @@ export default function CreateEventPage() {
         const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=8&countrycodes=${countrycodes}&q=${encodeURIComponent(q)}`;
         const res = await fetch(url, { signal: controller.signal, headers: { 'Accept-Language': 'en' } });
         if (!res.ok) throw new Error('nom');
-        const json: any[] = await res.json();
-        const names = json
-          .map(r => {
-            const a = r.address || {};
-            const locality = a.city || a.town || a.village || r.display_name?.split(',')[0];
-            const country = a.country || '';
-            return locality ? `${locality}${country ? `, ${country}` : ''}` : undefined;
-          })
-          .filter(Boolean) as string[];
+                          const json = await res.json() as Array<{ address?: { city?: string; town?: string; village?: string; country?: string }; display_name?: string }>;
+         const names = json
+           .map((r) => {
+             const a = r.address || {};
+             const locality = a.city || a.town || a.village || r.display_name?.split(',')[0];
+             const country = a.country || '';
+             return locality ? `${locality}${country ? `, ${country}` : ''}` : undefined;
+           })
+           .filter(Boolean) as string[];
         // dedupe while preserving order
         const seen = new Set<string>();
         const unique = names.filter(n => (seen.has(n) ? false : (seen.add(n), true)));
@@ -94,10 +94,10 @@ export default function CreateEventPage() {
         headers: { Authorization: `Bearer ${jwt}` },
         body: JSON.stringify({ title, description, startDate, endDate, city, isPrivate, accessCode, categoryId, imageId }),
       });
-      const slug = (created as any).slug as string;
+             const slug = (created as { slug: string }).slug;
       router.push(`/event/${slug}`);
-    } catch (e: any) {
-      setError(e?.message || 'Unknown error');
+         } catch (e: unknown) {
+       setError((e as Error)?.message || 'Unknown error');
     } finally {
       setSubmitting(false);
     }
@@ -173,8 +173,8 @@ export default function CreateEventPage() {
                 setImagePreview(URL.createObjectURL(file));
                 const up = await uploadImage(file, jwt || undefined);
                 setImageId(up.id);
-              } catch (err) {
-                setError((err as any)?.message || 'Upload failed');
+                             } catch (err) {
+                 setError((err as Error)?.message || 'Upload failed');
               }
             }} />
             <div className="flex items-center gap-3">

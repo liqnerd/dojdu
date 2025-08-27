@@ -3,7 +3,7 @@ services:
     name: dojdu-cms
     env: node
     rootDir: cms
-    buildCommand: npm install && npm run build
+    buildCommand: npm ci && npm run build
     startCommand: npm run start
     plan: free
     autoDeploy: true
@@ -14,23 +14,19 @@ services:
         value: 0.0.0.0
       - key: PORT
         value: 1337
-      # Database configuration for SQLite
-      - key: DATABASE_CLIENT
-        value: sqlite
-      - key: DATABASE_FILENAME
-        value: .tmp/data.db
-      # Strapi required secrets
+      # Generate strong secrets in the Render dashboard after creating the service
       - key: APP_KEYS
-        value: "key1,key2,key3,key4"
+        sync: false
       - key: API_TOKEN_SALT
-        value: "salt1"
+        sync: false
       - key: ADMIN_JWT_SECRET
-        value: "admin-secret"
+        sync: false
       - key: JWT_SECRET
-        value: "jwt-secret"
+        sync: false
       - key: TRANSFER_TOKEN_SALT
-        value: "transfer-salt"
-      # Build-time environment
-      - key: STRAPI_DISABLE_TELEMETRY
-        value: "1"
+        sync: false
+    disk:
+      name: strapi-data
+      mountPath: /opt/render/project/src/.tmp
+      sizeGB: 1
 

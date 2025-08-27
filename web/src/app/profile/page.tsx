@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { fetchCurrentUser, getJwt, clearJwt } from '@/lib/auth';
 import { RSVPStatus, EventItem, fetchMyEvents, deleteMyEvent } from '@/lib/api';
-import { Card } from '@/components/ui/card';
+
 import { Button } from '@/components/ui/button';
 import EventCard from '@/components/EventCard';
 
@@ -36,13 +36,13 @@ export default function ProfilePage() {
         try {
           const atts = await fetchMyAttendances(jwt);
           setData(atts);
-        } catch (e) {
+        } catch {
           setErrorRsvp('Could not load your RSVPs');
         }
         try {
           const mine = await fetchMyEvents(jwt);
           setMyEvents(mine);
-        } catch (e) {
+        } catch {
           setErrorMine('Could not load your events');
         }
       }

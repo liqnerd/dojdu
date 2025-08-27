@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { api, fetchCategories, uploadImage, Category, fetchEventBySlug, updateMyEvent } from "@/lib/api";
+import { fetchCategories, uploadImage, Category, fetchEventBySlug, updateMyEvent } from "@/lib/api";
 
 export default function EditEventPage({ params }: { params: { slug: string } }) {
   const router = useRouter();
@@ -58,9 +58,9 @@ export default function EditEventPage({ params }: { params: { slug: string } }) 
         const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=8&countrycodes=${countrycodes}&q=${encodeURIComponent(q)}`;
         const res = await fetch(url, { signal: controller.signal, headers: { 'Accept-Language': 'en' } });
         if (!res.ok) throw new Error('nom');
-        const json: any[] = await res.json();
+        const json = await res.json() as Array<{ address?: { city?: string; town?: string; village?: string; country?: string }; display_name?: string }>;
         const names = json
-          .map(r => {
+          .map((r) => {
             const a = r.address || {};
             const locality = a.city || a.town || a.village || r.display_name?.split(',')[0];
             const country = a.country || '';
@@ -106,10 +106,10 @@ export default function EditEventPage({ params }: { params: { slug: string } }) 
         city,
         categoryId,
         imageId,
-      } as any, jwt);
+      }, jwt);
       router.push(`/event/${params.slug}`);
-    } catch (e: any) {
-      setError(e?.message || 'Unknown error');
+    } catch (e: unknown) {
+      setError((e as Error)?.message || 'Unknown error');
     } finally { setSubmitting(false); }
   };
 
@@ -185,7 +185,7 @@ export default function EditEventPage({ params }: { params: { slug: string } }) 
                 const up = await uploadImage(file, jwt || undefined);
                 setImageId(up.id);
               } catch (err) {
-                setError((err as any)?.message || 'Upload failed');
+                setError((err as Error)?.message || 'Upload failed');
               }
             }} />
             {currentImageUrl && (

@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: 'http', hostname: 'localhost', port: '1337', pathname: '/uploads/**' },
       { protocol: 'https', hostname: '**.vercel.app' },
+      { protocol: 'https', hostname: 'dojdu-cms.onrender.com', pathname: '/uploads/**' },
     ],
   },
 };

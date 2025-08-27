@@ -1,16 +1,15 @@
 "use client";
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { RSVPStatus, EventItem, fetchEventBySlug, getStrapiImageUrl, rsvp, updateMyEvent } from '@/lib/api';
+import { RSVPStatus, EventItem, fetchEventBySlug, getStrapiImageUrl, rsvp } from '@/lib/api';
 
 export default function EventDetail({ params }: { params: Promise<{ slug: string }> }) {
   const [event, setEvent] = useState<EventItem | null>(null);
   const [jwt, setJwt] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [editMode, setEditMode] = useState(false);
-  const [form, setForm] = useState<{ title?: string; startDate?: string; endDate?: string; city?: string; description?: string }>({});
 
   useEffect(() => {
     let mounted = true;
@@ -18,7 +17,7 @@ export default function EventDetail({ params }: { params: Promise<{ slug: string
       const p = await params;
       setJwt(window.localStorage.getItem('jwt'));
       const ev = await fetchEventBySlug(p.slug);
-      if (mounted) { setEvent(ev); setForm({ title: ev.title, startDate: ev.startDate, endDate: ev.endDate, description: ev.description as string }); }
+      if (mounted) { setEvent(ev); }
     };
     load();
     return () => { mounted = false; };
@@ -51,45 +50,11 @@ export default function EventDetail({ params }: { params: Promise<{ slug: string
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {jwt && event && (event as any)?.owner?.id && ((event as any).owner.id === Number(JSON.parse(atob(jwt.split('.')[1])).id)) && (
-            <div className="mb-4 flex items-center gap-2">
-              <Button variant="secondary" size="sm" onClick={() => setEditMode(v => !v)}>{editMode ? 'Cancel edit' : 'Edit event'}</Button>
-              {editMode && (
-                <Button size="sm" onClick={async () => {
-                  setLoading(true);
-                  try {
-                    const token = localStorage.getItem('jwt')!;
-                    await updateMyEvent(event.id, { title: form.title, startDate: form.startDate, endDate: form.endDate, description: form.description, city: form.city }, token);
-                    window.location.reload();
-                  } finally { setLoading(false); }
-                }}>Save</Button>
-              )}
-            </div>
-          )}
-          {editMode && (
-            <div className="space-y-3 mb-4">
-              <div>
-                <label className="block text-sm mb-1">Title</label>
-                <input className="w-full rounded border px-3 py-2 bg-background" value={form.title || ''} onChange={e => setForm(prev => ({ ...prev, title: e.target.value }))} />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm mb-1">Start</label>
-                  <input type="datetime-local" className="w-full rounded border px-3 py-2 bg-background" value={(form.startDate || '').slice(0,16)} onChange={e => setForm(prev => ({ ...prev, startDate: e.target.value }))} />
-                </div>
-                <div>
-                  <label className="block text-sm mb-1">End</label>
-                  <input type="datetime-local" className="w-full rounded border px-3 py-2 bg-background" value={(form.endDate || '').slice(0,16)} onChange={e => setForm(prev => ({ ...prev, endDate: e.target.value }))} />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm mb-1">City</label>
-                <input className="w-full rounded border px-3 py-2 bg-background" value={form.city || ''} onChange={e => setForm(prev => ({ ...prev, city: e.target.value }))} />
-              </div>
-              <div>
-                <label className="block text-sm mb-1">Details</label>
-                <textarea className="w-full rounded border px-3 py-2 bg-background" rows={4} value={form.description || ''} onChange={e => setForm(prev => ({ ...prev, description: e.target.value }))} />
-              </div>
+          {jwt && event && event.owner?.id && (event.owner.id === Number(JSON.parse(atob(jwt.split('.')[1])).id)) && (
+            <div className="mb-4">
+              <Link href={`/event/${event.slug}/edit`}>
+                <Button variant="secondary" size="sm">Edit event</Button>
+              </Link>
             </div>
           )}
           {event.image?.url && (
