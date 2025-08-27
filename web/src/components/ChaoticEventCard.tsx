@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,8 @@ type Props = {
 };
 
 export default function ChaoticEventCard({ event, showActions }: Props) {
+  const router = useRouter();
+  
   // Generate consistent random tilt for this specific event
   const randomTilt = useMemo(() => {
     // Use event ID as seed for consistent randomness
@@ -22,7 +24,8 @@ export default function ChaoticEventCard({ event, showActions }: Props) {
     return tilt;
   }, [event.id]);
 
-  const onRSVP = async (status: RSVPStatus) => {
+  const onRSVP = async (e: React.MouseEvent, status: RSVPStatus) => {
+    e.stopPropagation(); // Prevent card click when clicking RSVP buttons
     const token = localStorage.getItem("jwt");
     if (!token) return alert("Please login first.");
     try {
@@ -34,15 +37,20 @@ export default function ChaoticEventCard({ event, showActions }: Props) {
     }
   };
 
+  const handleCardClick = () => {
+    router.push(`/event/${event.slug}`);
+  };
+
   const img = event.image?.url ? getStrapiImageUrl(event.image.url) : undefined;
 
   return (
     <div 
-      className="group transition-all duration-300 hover:scale-105 hover:z-10 relative"
+      className="group transition-all duration-300 hover:scale-105 hover:z-10 relative cursor-pointer"
       style={{ 
         transform: `rotate(${randomTilt}deg)`,
         transformOrigin: 'center center'
       }}
+      onClick={handleCardClick}
     >
       <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border-2">
         <div className="relative h-48 w-full">
@@ -71,13 +79,15 @@ export default function ChaoticEventCard({ event, showActions }: Props) {
               )}
               {event.category && <Badge variant="secondary">{event.category.name}</Badge>}
             </div>
-            <Link href={`/event/${event.slug}`} className="text-sm text-primary hover:underline">Details</Link>
+            <div className="text-sm text-primary/70 group-hover:text-primary transition-colors">
+              Click to view details
+            </div>
           </div>
           {showActions && (
-            <div className="flex gap-1 mt-2">
-              <Button size="sm" className="bg-gradient-to-r from-fuchsia-500 to-pink-500 hover:brightness-110" onClick={() => onRSVP("going")}>Going</Button>
-              <Button size="sm" variant="secondary" className="hover:brightness-110" onClick={() => onRSVP("maybe")}>Maybe</Button>
-              <Button size="sm" variant="outline" className="hover:bg-sky-50 dark:hover:bg-sky-950/30" onClick={() => onRSVP("not_going")}>No</Button>
+            <div className="flex gap-1 mt-2" onClick={(e) => e.stopPropagation()}>
+              <Button size="sm" className="bg-gradient-to-r from-fuchsia-500 to-pink-500 hover:brightness-110" onClick={(e) => onRSVP(e, "going")}>Going</Button>
+              <Button size="sm" variant="secondary" className="hover:brightness-110" onClick={(e) => onRSVP(e, "maybe")}>Maybe</Button>
+              <Button size="sm" variant="outline" className="hover:bg-sky-50 dark:hover:bg-sky-950/30" onClick={(e) => onRSVP(e, "not_going")}>No</Button>
             </div>
           )}
         </CardContent>
