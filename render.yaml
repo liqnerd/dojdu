@@ -19,15 +19,18 @@ services:
         value: sqlite
       - key: DATABASE_FILENAME
         value: .tmp/data.db
-      # Default secrets (you should change these in production)
+      # Strapi required secrets
       - key: APP_KEYS
-        value: "defaultKey1,defaultKey2,defaultKey3,defaultKey4"
+        value: "key1,key2,key3,key4"
       - key: API_TOKEN_SALT
-        value: "defaultApiTokenSalt"
+        value: "salt1"
       - key: ADMIN_JWT_SECRET
-        value: "defaultAdminJwtSecret"
+        value: "admin-secret"
       - key: JWT_SECRET
-        value: "defaultJwtSecret"
+        value: "jwt-secret"
       - key: TRANSFER_TOKEN_SALT
-        value: "defaultTransferTokenSalt"
+        value: "transfer-salt"
+      # Build-time environment
+      - key: STRAPI_DISABLE_TELEMETRY
+        value: "1"
 
