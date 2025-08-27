@@ -203,13 +203,23 @@ export default function ProfilePage() {
 
   const groups = useMemo(() => {
     const g: Record<RSVPStatus, Attendance[]> = { going: [], maybe: [], not_going: [] };
+    console.log('🔍 Grouping attendances:', data);
     if (data && Array.isArray(data)) {
       for (const a of data) {
+        console.log(`🔍 Processing attendance:`, { id: a?.id, status: a?.status, event: a?.event?.title });
         if (a && a.status && g[a.status]) {
           g[a.status].push(a);
+          console.log(`✅ Added to ${a.status} group`);
+        } else {
+          console.log(`❌ Could not add attendance:`, { status: a?.status, hasStatusInGroups: a?.status in g });
         }
       }
     }
+    console.log('🎯 Final groups:', {
+      going: g.going.length,
+      maybe: g.maybe.length,
+      not_going: g.not_going.length
+    });
     return g;
   }, [data]);
 
